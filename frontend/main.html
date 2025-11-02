@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Main</title>
+</head>
+
+<body>
+    <h1>Main Page</h1>
+    <p id="who">Checking...</p>
+    <button id="logoutBtn">Logout</button>
+
+    <script>
+        const API = 'http://localhost:3000';
+
+        async function get(path) {
+            const r = await fetch(API + path, { credentials: 'include' });
+            return r.json();
+        }
+
+        async function post(path) {
+            const r = await fetch(API + path, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            return r.json();
+        }
+
+        // Check if user logged in
+        (async () => {
+            const res = await get('/auth/main');
+            if (!res.ok) {
+                window.location = 'login.html';
+            } else {
+                who.textContent = 'Signed in as ' + res.user.email;
+            }
+        })();
+
+        logoutBtn.onclick = async () => {
+            await post('/auth/logout');
+            window.location = 'login.html';
+        };
+    </script>
+</body>
+
+</html>
