@@ -27,7 +27,7 @@ const users = new Map([
     ['admin@admin.com', {
         id: 2,
         email: 'admin@admin.com',
-        passHash: bcrypt.hashSync('123', 10),
+        passHash: bcrypt.hashSync('111', 10),
         role: 'admin'
     }]
 ]);
