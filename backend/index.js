@@ -23,6 +23,12 @@ const users = new Map([
         email: 'gugu@gugu.com',
         passHash: bcrypt.hashSync('123', 10),
         role: 'user'
+    }],
+    ['admin@admin.com', {
+        id: 2,
+        email: 'admin@admin.com',
+        passHash: bcrypt.hashSync('123', 10),
+        role: 'admin'
     }]
 ]);
 
@@ -39,6 +45,14 @@ function sign(user) {
 
 /* Middleware */////////
 
+// Get user by ID
+function getUserById(id) {
+    for (let [email, user] of users) {
+        if (user.id === id) return user;
+    }
+    return null;
+}
+
 // check if token exists and is valid 
 function auth(req, res, next) {
     const token = req.cookies.token;
@@ -51,7 +65,53 @@ function auth(req, res, next) {
     }
 }
 
+// Check if user is admin
+function isAdmin(req, res, next) {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+}
+
 /* ROUTES */////////
+
+app.post('/auth/register', async (req, res) => {
+    const { firstName, lastName, email, password } = req.body;
+    
+    // Validation
+    if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ error: 'All fields required' });
+    }
+    
+    if (password.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+    
+    // Check if user already exists
+    if (users.has(email)) {
+        return res.status(409).json({ error: 'Email already registered' });
+    }
+    
+    // Create new user
+    const newUser = {
+        id: users.size + 1,
+        firstName,
+        lastName,
+        email,
+        passHash: await bcrypt.hash(password, 10),
+        role: 'user',
+        apiCallsUsed: 0,
+        createdAt: new Date(),
+        lastLogin: null
+    };
+    
+    users.set(email, newUser);
+    
+    res.status(201).json({ 
+        ok: true, 
+        message: 'Registration successful' 
+    });
+});
 
 app.post('/auth/login', async (req, res) => {
     const { email, password } = req.body || {};
@@ -59,6 +119,9 @@ app.post('/auth/login', async (req, res) => {
     if (!user || !(await bcrypt.compare(password, user.passHash))) {
         return res.status(401).json({ error: 'bad creds' });
     }
+
+    //Update last login
+    user.lastLogin = new Date();
 
     const token = sign(user);
 
@@ -71,7 +134,17 @@ app.post('/auth/login', async (req, res) => {
         maxAge: 60 * 60 * 1000
     });
 
-    res.json({ ok: true });
+    res.json({ 
+        ok: true,
+        user: {
+            firstName: user.firstName,
+            email: user.email,
+            role: user.role
+        },
+
+        //Redirect based on user role
+        redirectTo: user.role === 'admin' ? 'admin.html' : 'main.html'
+     });
 });
 
 
@@ -86,8 +159,87 @@ app.post('/auth/logout', (req, res) => {
 });
 
 // Pass in auth fucntion to make sure only authorized users can access.
+// Get user dashboard data
 app.get('/auth/main', auth, (req, res) => {
-    res.json({ ok: true, user: req.user });
+    const user = getUserById(req.user.uid);
+    
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ 
+        ok: true, 
+        user: {
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            apiCallsUsed: user.apiCallsUsed,
+            createdAt: user.createdAt,
+            lastLogin: user.lastLogin
+        }
+    });
 });
 
+/* API ROUTES */
+
+// Get user's API usage stats
+app.get('/api/user/stats', auth, (req, res) => {
+    const user = getUserById(req.user.uid);
+    
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+        ok: true,
+        stats: {
+            apiCallsUsed: user.apiCallsUsed,
+            freeCallsRemaining: Math.max(0, 20 - user.apiCallsUsed),
+            exceededLimit: user.apiCallsUsed > 20,
+            createdAt: user.createdAt
+        }
+    });
+});
+
+/* ADMIN ROUTES */
+
+// Get all users (admin only)
+app.get('/api/admin/users', auth, isAdmin, (req, res) => {
+    const allUsers = Array.from(users.values()).map(user => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        apiCallsUsed: user.apiCallsUsed,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin
+    }));
+
+    res.json({
+        ok: true,
+        users: allUsers
+    });
+});
+
+// Get system stats (admin only)
+app.get('/api/admin/stats', auth, isAdmin, (req, res) => {
+    const allUsers = Array.from(users.values());
+    
+    const stats = {
+        totalUsers: allUsers.length,
+        totalApiCalls: allUsers.reduce((sum, user) => sum + user.apiCallsUsed, 0),
+        activeUsers: allUsers.filter(user => user.lastLogin).length,
+        usersOverLimit: allUsers.filter(user => user.apiCallsUsed > 20).length
+    };
+
+    res.json({
+        ok: true,
+        stats
+    });
+});
+
+
+/* SERVER*/
 app.listen(3000, () => console.log('API running on http://localhost:3000'));
