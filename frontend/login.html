@@ -13,36 +13,7 @@
     <button id="loginBtn">Login</button>
     <pre id="msg"></pre>
 
-    <script>
-        const API = 'http://localhost:3000';
-
-        async function post(path, body) {
-            const r = await fetch(API + path, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(body)
-            });
-            return r.json();
-        }
-
-        loginBtn.onclick = async () => {
-            msg.textContent = 'Logging in...';
-            try {
-                const res = await post('/auth/login', {
-                    email: email.value,
-                    password: pass.value
-                });
-                if (res.ok) {
-                    window.location = 'main.html';
-                } else {
-                    msg.textContent = JSON.stringify(res);
-                }
-            } catch (e) {
-                msg.textContent = 'Error: ' + e.message;
-            }
-        };
-    </script>
+    <script src="./js/login.js"></script>
 </body>
 
 </html>
