@@ -120,7 +120,6 @@ function displayUsers(users) {
         return `
                     <tr>
                         <td>${user.id}</td>
-                        <td>${user.firstName} ${user.lastName}</td>
                         <td>${user.email}</td>
                         <td>${roleBadge}</td>
                         <td>
