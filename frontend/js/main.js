@@ -1,4 +1,4 @@
-const API = 'http://localhost:3000';
+const API = 'http://https://comp4537-term-project-1.onrender.com';
 
 async function get(path) {
     const r = await fetch(API + path, { credentials: 'include' });
@@ -32,7 +32,7 @@ const activityList = document.getElementById('activityList');
 (async () => {
     const res = await get('/auth/main');
     if (!res.ok) {
-        window.location = 'login.html';
+        window.location = 'index.html';
         return;
     }
 
@@ -146,5 +146,5 @@ function addActivity(command) {
 // Logout Handler
 document.getElementById('logoutBtn').onclick = async () => {
     await post('/auth/logout');
-    window.location = 'login.html';
+    window.location = 'index.html';
 };

@@ -1,6 +1,6 @@
 const API = window.location.hostname === 'localhost'
     ? 'http://localhost:3000'
-    : 'https://your-api.onrender.com';
+    : 'https://comp4537-term-project-1.onrender.com';
 
 // DOM Elements
 const form = document.getElementById('registrationForm');

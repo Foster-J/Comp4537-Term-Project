@@ -1,5 +1,5 @@
 
-const API = 'http://localhost:3000';
+const API = 'http://https://comp4537-term-project-1.onrender.com';
 
 // API Helper Functions
 async function get(path) {
@@ -35,7 +35,7 @@ let allUsers = [];
 (async () => {
     const res = await get('/auth/main');
     if (!res.ok) {
-        window.location = 'login.html';
+        window.location = 'index.html';
         return;
     }
 
@@ -204,5 +204,5 @@ document.getElementById('refreshBtn').addEventListener('click', async () => {
 // Logout
 document.getElementById('logoutBtn').onclick = async () => {
     await post('/auth/logout');
-    window.location = 'login.html';
+    window.location = 'index.html';
 };
