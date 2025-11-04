@@ -12,9 +12,17 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: ['http://localhost:5500', 'https://helpful-froyo-497ae3.netlify.app/'],
-    credentials: true
+    origin: [
+        'http://localhost:5500',
+        'https://helpful-froyo-497ae3.netlify.app'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['set-cookie']
 }));
+
+app.options('*', cors());
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -181,8 +189,8 @@ app.post('/auth/login', async (req, res) => {
         // Send cookie to browser
         res.cookie('token', token, {
             httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
             path: '/',
             maxAge: 60 * 60 * 1000
         });
@@ -205,8 +213,8 @@ app.post('/auth/login', async (req, res) => {
 app.post('/auth/logout', (req, res) => {
     res.clearCookie('token', {
         httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
+        secure: true,
+        sameSite: 'none',
         path: '/'
     });
     res.json({ ok: true });
