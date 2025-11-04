@@ -1,5 +1,5 @@
 
-const API = 'http://https://comp4537-term-project-1.onrender.com';
+const API = 'https://comp4537-term-project-1.onrender.com';
 
 // API Helper Functions
 async function get(path) {

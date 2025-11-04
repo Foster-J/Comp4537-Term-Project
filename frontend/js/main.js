@@ -1,4 +1,4 @@
-const API = 'http://https://comp4537-term-project-1.onrender.com';
+const API = 'https://comp4537-term-project-1.onrender.com';
 
 async function get(path) {
     const r = await fetch(API + path, { credentials: 'include' });
