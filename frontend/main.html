@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Ordering Service</title>
+    <title>Dashboard - AI Phone Call Service</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -19,7 +19,7 @@
         <div class="container-fluid px-4">
             <div class="d-flex align-items-center">
                 <i class="bi bi-drone-fill fs-2 me-3 text-primary"></i>
-                <span class="navbar-brand mb-0 h1">AI Drone Control</span>
+                <span class="navbar-brand mb-0 h1">AI Phone Call Service</span>
             </div>
             <div class="d-flex align-items-center gap-3">
                 <span class="user-email" id="userEmail">Loading...</span>
@@ -30,210 +30,163 @@
         </div>
     </nav>
 
-    <!-- Main Container -->
-    <div class="container-fluid px-4 py-4">
+<!-- Main Content Row -->
+<div class="row g-4 mb-4">
 
-        <!-- Hero Section -->
-        <div class="text-center mb-5">
-            <h2 class="display-5 fw-bold mb-3 hero-title">Autonomous Drone Flight Control</h2>
-            <p class="lead text-light-gray">Control drones with AI-powered commands. Advanced wall detection and
-                autonomous navigation.</p>
-        </div>
+    <!-- Create Call Script -->
+    <div class="col-lg-8">
+        <div class="card control-card">
+            <div class="card-body">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-mic-fill me-2"></i>Create Phone Call Script
+                </h5>
 
-        <!-- Warning Alert -->
-        <div class="alert alert-warning alert-dismissible fade show d-none" role="alert" id="limitWarning">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <strong>API Limit Exceeded!</strong> You've used all 20 free commands. You can continue using the service.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="row g-4 mb-5">
-            <div class="col-md-3">
-                <div class="card stat-card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <p class="text-muted small mb-1">COMMANDS USED</p>
-                                <h3 class="mb-0 fw-bold" id="apiCallsUsed">-</h3>
-                            </div>
-                            <i class="bi bi-command fs-3 text-primary"></i>
-                        </div>
-                        <div class="progress" style="height: 6px;">
-                            <div class="progress-bar" role="progressbar" id="progressFill" style="width: 0%"></div>
-                        </div>
-                        <p class="text-muted small mb-0 mt-2">out of 20 free commands</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card stat-card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <p class="text-muted small mb-1">REMAINING</p>
-                                <h3 class="mb-0 fw-bold text-success" id="remainingCalls">-</h3>
-                            </div>
-                            <i class="bi bi-battery-charging fs-3 text-success"></i>
-                        </div>
-                        <p class="text-muted small mb-0 mt-4">Free commands available</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card stat-card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <p class="text-muted small mb-1">DRONE STATUS</p>
-                                <h5 class="mb-0 fw-bold">
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-check-circle me-1"></i>Ready
-                                    </span>
-                                </h5>
-                            </div>
-                            <i class="bi bi-shield-check fs-3 text-info"></i>
-                        </div>
-                        <p class="text-muted small mb-0 mt-4">All systems operational</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card stat-card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <p class="text-muted small mb-1">MEMBER SINCE</p>
-                                <h6 class="mb-0 fw-bold" id="memberSince">-</h6>
-                            </div>
-                            <i class="bi bi-calendar-check fs-3 text-warning"></i>
-                        </div>
-                        <p class="text-muted small mb-0 mt-4">Account creation date</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Row -->
-        <div class="row g-4 mb-4">
-
-            <!-- AI Command Center -->
-            <div class="col-lg-8">
-                <div class="card control-card">
-                    <div class="card-body">
-                        <h5 class="card-title mb-4">
-                            <i class="bi bi-robot me-2"></i>AI Flight Command Center
-                        </h5>
-
-                        <div class="mb-3">
-                            <label for="aiCommand" class="form-label fw-semibold">
-                                Enter Flight Command
+                <form id="callForm">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="callerName" class="form-label fw-semibold">
+                                <i class="bi bi-person me-1"></i>Your Name
                             </label>
-                            <textarea class="form-control" id="aiCommand" rows="4"
-                                placeholder="Example: Fly forward 5 meters and avoid any obstacles..."></textarea>
-                            <div class="form-text">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Use natural language to control the drone. AI will interpret and execute your commands.
-                            </div>
+                            <input type="text" class="form-control" id="callerName" placeholder="John Doe" required>
                         </div>
-
-                        <button class="btn btn-primary btn-lg w-100" id="submitBtn">
-                            <i class="bi bi-send me-2"></i>Execute Command
-                        </button>
-
-                        <!-- Result Display -->
-                        <div class="alert alert-info mt-4 d-none" id="resultBox">
-                            <h6 class="alert-heading">
-                                <i class="bi bi-cpu me-2"></i>AI Response:
-                            </h6>
-                            <hr>
-                            <p class="mb-0" id="resultContent"></p>
+                        <div class="col-md-6">
+                            <label for="restaurantName" class="form-label fw-semibold">
+                                <i class="bi bi-shop me-1"></i>Restaurant Name
+                            </label>
+                            <input type="text" class="form-control" id="restaurantName" placeholder="Nav Sweets"
+                                required>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Feature Cards -->
-            <div class="col-lg-4">
-                <div class="card feature-card mb-4">
-                    <div class="card-body">
-                        <h6 class="card-title mb-3">
-                            <i class="bi bi-radar me-2 text-primary"></i>Features
-                        </h6>
-                        <ul class="list-unstyled feature-list">
-                            <li>
-                                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                AI-Powered Navigation
-                            </li>
-                            <li>
-                                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Real-time Wall Detection
-                            </li>
-                            <li>
-                                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Collision Avoidance
-                            </li>
-                            <li>
-                                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Natural Language Control
-                            </li>
-                            <li>
-                                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                Autonomous Flight Paths
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="card feature-card">
-                    <div class="card-body">
-                        <h6 class="card-title mb-3">
-                            <i class="bi bi-lightning-charge me-2 text-warning"></i>Quick Commands
-                        </h6>
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-outline-secondary btn-sm quick-cmd" data-cmd="Fly forward 3 meters">
-                                Forward 3m
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm quick-cmd" data-cmd="Turn right 90 degrees">
-                                Turn Right 90°
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm quick-cmd"
-                                data-cmd="Scan the area for obstacles">
-                                Scan Area
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm quick-cmd"
-                                data-cmd="Return to starting position">
-                                Return Home
-                            </button>
+                    <div class="mb-3">
+                        <label for="phoneNumber" class="form-label fw-semibold">
+                            <i class="bi bi-telephone me-1"></i>Phone Number
+                        </label>
+                        <input type="tel" class="form-control" id="phoneNumber" placeholder="+1 (555) 123-4567"
+                            pattern="[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}" required>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Include country code (e.g., +1 for USA/Canada)
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Recent Activity -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title mb-4">
-                            <i class="bi bi-clock-history me-2"></i>Recent Activity
-                        </h5>
-                        <div class="list-group list-group-flush" id="activityList">
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <p class="mb-0 text-muted">No recent activity</p>
-                                </div>
-                            </div>
+                    <div class="mb-3">
+                        <label for="callScript" class="form-label fw-semibold">
+                            <i class="bi bi-chat-text me-1"></i>Call Script
+                        </label>
+                        <textarea class="form-control" id="callScript" rows="6"
+                            placeholder="Hi, my name is [Your Name] and I'd like to make a reservation for 4 people at 7pm this Friday..."
+                            required></textarea>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Write what you want the AI to say on the phone call
                         </div>
                     </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
+                        <i class="bi bi-send me-2"></i>Make AI Phone Call
+                    </button>
+                </form>
+
+                <!-- Result Display -->
+                <div class="alert alert-success mt-4 d-none" id="resultBox">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-check-circle me-2"></i>Call Initiated Successfully!
+                    </h6>
+                    <hr>
+                    <p class="mb-0" id="resultContent"></p>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Saved Scripts & Tips -->
+    <div class="col-lg-4">
+        <!-- Tips Card -->
+        <div class="card feature-card mb-4">
+            <div class="card-body">
+                <h6 class="card-title mb-3">
+                    <i class="bi bi-lightbulb me-2 text-warning"></i>Script Writing Tips
+                </h6>
+                <ul class="list-unstyled feature-list">
+                    <li>
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Keep it natural and conversational
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Include all necessary details
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Be polite and professional
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Mention your name clearly
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Specify date, time, and party size
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Quick Templates -->
+        <div class="card feature-card">
+            <div class="card-body">
+                <h6 class="card-title mb-3">
+                    <i class="bi bi-file-text me-2 text-primary"></i>Quick Templates
+                </h6>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-secondary btn-sm template-btn" data-template="reservation">
+                        Restaurant Reservation
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm template-btn" data-template="appointment">
+                        Appointment Booking
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm template-btn" data-template="inquiry">
+                        General Inquiry
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" id="clearForm">
+                        Clear Form
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Calls -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-clock-history me-2"></i>Recent Calls
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Restaurant</th>
+                                <th>Phone Number</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentCallsTable">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No recent calls</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./js/main.js"></script>
