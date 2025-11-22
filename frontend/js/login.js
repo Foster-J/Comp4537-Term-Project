@@ -1,4 +1,6 @@
-const API = 'https://comp4537-term-project-1.onrender.com';
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:3000'
+    : 'https://comp4537-term-project-1.onrender.com';
 
         async function post(path, body) {
             const r = await fetch(API + path, {

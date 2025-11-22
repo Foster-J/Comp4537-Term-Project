@@ -14,11 +14,14 @@ app.use(cookieParser());
 app.use(cors({
     origin: [
         'http://localhost:5500',
+        'http://127.0.0.1:5500',          // ← ADD THIS
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',          // ← ADD THIS
         'https://helpful-froyo-497ae3.netlify.app'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
     exposedHeaders: ['set-cookie']
 }));
 
@@ -51,6 +54,20 @@ async function initDb() {
       last_login TIMESTAMP NULL DEFAULT NULL
     ) ENGINE=InnoDB;
   `);
+
+    await db.query(`
+    CREATE TABLE IF NOT EXISTS call_history (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      caller_name VARCHAR(255) NOT NULL,
+      restaurant_name VARCHAR(255) NOT NULL,
+      phone_number VARCHAR(50) NOT NULL,
+      script TEXT NOT NULL,
+      status ENUM('pending','completed','failed') DEFAULT 'completed',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB;
+`);
 
     // Seed the two demo accounts if missing
     const [rows] = await db.query(
@@ -272,6 +289,69 @@ app.get('/api/user/stats', auth, async (req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// AI Phone Call endpoint - Always saves to database
+app.post('/api/ai/call', auth, async (req, res) => {
+    const { callerName, restaurantName, phoneNumber, script } = req.body;
+    
+    // Validation
+    if (!callerName || !restaurantName || !phoneNumber || !script) {
+        return res.status(400).json({ error: 'All fields required' });
+    }
+
+    const user = await getUserById(req.user.uid);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Increment API usage
+    await db.query(`UPDATE users SET api_calls_used = api_calls_used + 1 WHERE id = ?`, [user.id]);
+    
+    try {
+        // TODO: Call AI model / Twilio / phone service here
+        // Example: const result = await makeAICall(phoneNumber, script);
+        
+        // Save to database
+        await db.query(
+            `INSERT INTO call_history (user_id, caller_name, restaurant_name, phone_number, script, status, created_at)
+             VALUES (?, ?, ?, ?, ?, 'completed', NOW())`,
+            [user.id, callerName, restaurantName, phoneNumber, script]
+        );
+        
+        res.json({
+            ok: true,
+            status: 'Completed',
+            message: 'AI call has been initiated and saved to your history!',
+            apiCallsUsed: user.apiCallsUsed + 1,
+            freeCallsRemaining: Math.max(0, 20 - (user.apiCallsUsed + 1))
+        });
+    } catch (error) {
+        console.error('AI Call Error:', error);
+        res.status(500).json({ error: 'Failed to initiate call' });
+    }
+});
+
+// Get user's call history
+app.get('/api/user/call-history', auth, async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT id, caller_name, restaurant_name, phone_number, script, status, created_at
+             FROM call_history 
+             WHERE user_id = ?
+             ORDER BY created_at DESC
+             LIMIT 10`,
+            [req.user.uid]
+        );
+        
+        res.json({
+            ok: true,
+            calls: rows
+        });
+    } catch (error) {
+        console.error('Error fetching call history:', error);
+        res.status(500).json({ error: 'Failed to fetch call history' });
     }
 });
 

@@ -1,4 +1,4 @@
-const API = window.location.hostname === 'localhost'
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:3000'
     : 'https://comp4537-term-project-1.onrender.com';
 
@@ -84,7 +84,7 @@ form.addEventListener('submit', async (e) => {
             showMessage('✓ Registration successful! Redirecting to login...', 'success');
             form.reset();
             setTimeout(() => {
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
             }, 2000);
         } else {
             showMessage(data.error || 'Registration failed. Please try again.', 'danger');
