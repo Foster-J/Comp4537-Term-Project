@@ -2,6 +2,18 @@ const API = (window.location.hostname === 'localhost' || window.location.hostnam
     ? 'http://localhost:3000'
     : 'https://comp4537-term-project-1.onrender.com';
 
+// Templates
+const templates = {
+    reservation: {
+        script: "Hi, my name is [Name] and I'd like to make a reservation at [Restaurant] for 4 people this Friday at 7 PM. Do you have any availability? Thank you!"
+    },
+    appointment: {
+        script: "Hello, this is [Name]. I'm calling to schedule an appointment at [Business]. I'm available this week in the afternoons. What times do you have available? Thanks!"
+    },
+    inquiry: {
+        script: "Hi, my name is [Name] and I'm calling [Business] to inquire about your services. Could you please provide me with more information about your hours and pricing? Thank you!"
+    }
+};
 async function get(path) {
     const r = await fetch(API + path, { credentials: 'include' });
     return r.json();
@@ -24,11 +36,11 @@ const remainingCalls = document.getElementById('remainingCalls');
 const progressFill = document.getElementById('progressFill');
 const limitWarning = document.getElementById('limitWarning');
 const submitBtn = document.getElementById('submitBtn');
-const aiCommand = document.getElementById('aiCommand');
+const callForm = document.getElementById('callForm');
 const resultBox = document.getElementById('resultBox');
 const resultContent = document.getElementById('resultContent');
 const memberSince = document.getElementById('memberSince');
-const activityList = document.getElementById('activityList');
+const recentCallsTable = document.getElementById('recentCallsTable');
 
 // Check if user logged in
 (async () => {
@@ -72,11 +84,16 @@ function updateStats(used) {
 }
 
 // Handle AI Command Submission
-submitBtn.addEventListener('click', async () => {
-    const input = aiCommand.value.trim();
+callForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-    if (!input) {
-        alert('Please enter a flight command');
+    const callerName = document.getElementById('callerName').value.trim();
+    const restaurantName = document.getElementById('restaurantName').value.trim();
+    const phoneNumber = document.getElementById('phoneNumber').value.trim();
+    const callScript = document.getElementById('callScript').value.trim();
+
+    if (!callerName || !restaurantName || !phoneNumber || !callScript) {
+        alert('Please fill in all fields');
         return;
     }
 
@@ -85,64 +102,95 @@ submitBtn.addEventListener('click', async () => {
     resultBox.classList.add('d-none');
 
     try {
-        const response = await post('/api/ai/predict', { input });
+        const response = await post('/api/ai/call', {
+            callerName,
+            restaurantName,
+            phoneNumber,
+            script: callScript
+        });
 
         if (response.error) {
             alert('Error: ' + response.error);
             return;
         }
 
-        resultContent.textContent = response.result || 'No result returned';
+        resultContent.innerHTML = `
+            <strong>Call Details:</strong><br>
+            Restaurant: ${restaurantName}<br>
+            Phone: ${phoneNumber}<br>
+            Status: ${response.status || 'Initiated'}<br>
+            ${response.message || 'AI is making the call now...'}
+        `;
         resultBox.classList.remove('d-none');
 
         if (response.apiCallsUsed !== undefined) {
             updateStats(response.apiCallsUsed);
         }
 
-        addActivity(input);
+        addRecentCall(restaurantName, phoneNumber);
+
+        callForm.reset();
 
     } catch (error) {
         alert('Network error. Please try again.');
         console.error(error);
     } finally {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Execute Command';
+        submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Make AI Phone Call';
     }
 });
 
-// Quick Command Buttons
-document.querySelectorAll('.quick-cmd').forEach(btn => {
+// Template Buttons
+document.querySelectorAll('.template-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        aiCommand.value = btn.dataset.cmd;
+        const template = templates[btn.dataset.template];
+        if (template) {
+            document.getElementById('callScript').value = template.script;
+        }
     });
 });
 
-// Add activity to list
-function addActivity(command) {
+// Clear Form
+document.getElementById('clearForm').addEventListener('click', () => {
+    callForm.reset();
+});
+
+// Load Recent Calls from Database
+async function loadRecentCalls() {
+    try {
+        const response = await get('/api/user/call-history');
+        if (response.ok && response.calls && response.calls.length > 0) {
+            recentCallsTable.innerHTML = response.calls.map(call => `
+                <tr>
+                    <td>${new Date(call.created_at).toLocaleString()}</td>
+                    <td>${call.restaurant_name}</td>
+                    <td>${call.phone_number}</td>
+                    <td><span class="badge bg-success">Completed</span></td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading call history:', error);
+    }
+}
+
+// Add Recent Call to table
+function addRecentCall(restaurant, phone) {
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    const row = `
+        <tr>
+            <td>${now.toLocaleString()}</td>
+            <td>${restaurant}</td>
+            <td>${phone}</td>
+            <td><span class="badge bg-success">Completed</span></td>
+        </tr>
+    `;
 
-    const item = document.createElement('div');
-    item.className = 'list-group-item';
-    item.innerHTML = `
-                <div class="d-flex w-100 justify-content-between">
-                    <p class="mb-0"><i class="bi bi-terminal me-2 text-primary"></i>${command}</p>
-                    <small class="text-muted">${timeStr}</small>
-                </div>
-            `;
-
-    if (activityList.firstChild.textContent.includes('No recent activity')) {
-        activityList.innerHTML = '';
+    if (recentCallsTable.firstChild.textContent.includes('No recent calls')) {
+        recentCallsTable.innerHTML = '';
     }
 
-    activityList.prepend(item);
-
-    while (activityList.children.length > 5) {
-        activityList.removeChild(activityList.lastChild);
-    }
+    recentCallsTable.insertAdjacentHTML('afterbegin', row);
 }
 
 // Logout Handler
