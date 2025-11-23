@@ -11,14 +11,36 @@ const db = require('./databaseConnection');
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+
+const isDevelopment = process.env.NODE_ENV !== 'production';
+console.log(`Environment: ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'} `);
+
 app.use(cors({
-    origin: [
-        'http://localhost:5500',
-        'http://127.0.0.1:5500',          // ← ADD THIS
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',          // ← ADD THIS
-        'https://helpful-froyo-497ae3.netlify.app'
-    ],
+    origin: function(origin, callback) {
+        // Allow requests with no origin (Postman, mobile apps, etc.)
+        if (!origin) return callback(null, true);
+        
+        console.log('🔍 Request from:', origin);
+        
+        // DEVELOPMENT MODE: Allow all HTTP origins
+        if (isDevelopment && origin.startsWith('http://')) {
+            console.log('Allowed (dev):', origin);
+            return callback(null, true);
+        }
+        
+        // PRODUCTION MODE: Whitelist only
+        const productionOrigins = [
+            'https://helpful-froyo-497ae3.netlify.app'
+        ];
+        
+        if (productionOrigins.includes(origin)) {
+            console.log('Allowed (prod):', origin);
+            return callback(null, true);
+        }
+        
+        console.log('CORS Blocked:', origin);
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
