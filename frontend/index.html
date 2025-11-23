@@ -1,22 +1,49 @@
 <!doctype html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/style.css" rel="stylesheet">
 </head>
 
 <body>
-    <h1>Login</h1>
-    <input id="email"><br>
-    <input id="pass" type="password"><br>
-    <button id="loginBtn">Login</button>
-    <pre id="msg"></pre>
+    <div class="container">
+        <div class="login-container">
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="text-center" id="loginTitle"></h1>
 
-    <div class="signup-link">
-        Don't have an account? <a href="signup.html">Create Account</a>
+                    <div id="msg"></div>
+
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label" id="emailLabel"></label>
+                            <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="pass" class="form-label" id="passwordLabel"></label>
+                            <input type="password" class="form-control" id="pass" placeholder="Enter your password" required>
+                        </div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary" id="loginBtn"></button>
+                        </div>
+                    </form>
+
+                    <div class="signup-link">
+                        <span id="signupText"></span> <a href="signup.html" id="signupLink"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./js/strings.js"></script>
     <script src="./js/login.js"></script>
 </body>
 
