@@ -307,15 +307,29 @@ app.get('/api/user/stats', auth, async (req, res) => {
 });
 
 app.post('/api/ai/call', auth, async (req, res) => {
-    const { callerName, restaurantName, phoneNumber, script } = req.body;
-    const newApiCount = user.apiCallsUsed + 1;
-
     try {
+        const { callerName, restaurantName, phoneNumber, script } = req.body;
+
+        // Validate request body
+        if (!callerName || !restaurantName || !phoneNumber || !script) {
+            return res.status(400).json({ error: 'All fields required' });
+        }
+
+        // Check LLM token
         if (!LLM_API_TOKEN) {
             console.error('LLM_API_TOKEN is not set');
             return res.status(500).json({ error: 'LLM server not configured' });
         }
 
+        // Get user from DB
+        const user = await getUserById(req.user.uid);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const newApiCount = (user.apiCallsUsed || 0) + 1;
+
+        // Build prompt for LLM
         const inputPrompt =
             `You are calling a restaurant on behalf of a client to place an order. ` +
             `Speak casually. Your job is to introduce yourself as an AI bot from the Company UpScaling, ` +
@@ -325,6 +339,7 @@ app.post('/api/ai/call', auth, async (req, res) => {
             `Here is the order data you should use (this is for you, the AI, and should NOT be repeated as JSON in your answer): ` +
             `{ "client": "${callerName}", "restaurant": "${restaurantName}", "order": "${script}" }`;
 
+        // Call LLM
         const llmResponse = await axios.post(
             `${LLM_URL}/chat`,
             { input: inputPrompt },
@@ -338,48 +353,55 @@ app.post('/api/ai/call', auth, async (req, res) => {
         );
 
         const aiOutput = llmResponse.data.output || '';
+        const spokenText = aiOutput || script;
 
-        // >>> LOG HERE <<<
+        // Debug logs
         console.log('LLM raw response:', llmResponse.data);
         console.log('LLM generated script:', aiOutput);
 
+        await db.query(
+            `UPDATE users SET api_calls_used = api_calls_used + 1 WHERE id = ?`,
+            [user.id]
+        );
 
-        if (!callerName || !restaurantName || !phoneNumber || !script) {
-            return res.status(400).json({ error: 'All fields required' });
-        }
-
-        const user = await getUserById(req.user.uid);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        await db.query(`UPDATE users SET api_calls_used = api_calls_used + 1 WHERE id = ?`, [user.id]);
+        // Trigger Twilio call with the generated script
+        let callStatus = 'pending';
+        let callSid = null;
 
         try {
-            // TODO: Call AI model / Twilio / phone service here
-            // Example: const result = await makeAICall(phoneNumber, script);
-
-            // Save to database
-            await db.query(
-                `INSERT INTO call_history (user_id, caller_name, restaurant_name, phone_number, script, status, created_at)
-             VALUES (?, ?, ?, ?, ?, 'completed', NOW())`,
-                [user.id, callerName, restaurantName, phoneNumber, aiOutput || script]
-            );
-
-            res.json({
-                ok: true,
-                status: 'Completed',
-                message: 'AI call script generated and saved to your history.',
-                aiScript: aiOutput,
-                apiCallsUsed: newApiCount,
-                freeCallsRemaining: Math.max(0, 20 - newApiCount)
-            });
-
-        } catch (error) {
-            console.error('AI Call Error:', error.response?.data || error.message);
-            res.status(500).json({ error: 'Failed to generate AI call script' });
+            callSid = await makeTTSCall(phoneNumber, spokenText);
+            console.log('Twilio call started, SID:', callSid);
+            callStatus = 'completed';
+        } catch (twilioErr) {
+            console.error('Twilio call failed:', twilioErr);
+            callStatus = 'failed';   
         }
-    });
+
+        await db.query(
+            `INSERT INTO call_history (
+                user_id, caller_name, restaurant_name, phone_number, script, status, created_at
+             )
+             VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+            [user.id, callerName, restaurantName, phoneNumber, spokenText, callStatus]
+        );
+
+        return res.json({
+            ok: true,
+            status: callStatus === 'completed' ? 'Completed' : 'Failed',
+            message: callStatus === 'completed'
+                ? 'AI call script generated, call placed, and saved to your history.'
+                : 'AI script generated and saved, but placing the call failed.',
+            aiScript: spokenText,
+            callSid,
+            apiCallsUsed: newApiCount,
+            freeCallsRemaining: Math.max(0, 20 - newApiCount)
+        });
+
+    } catch (error) {
+        console.error('AI Call Error:', error.response?.data || error.message || error);
+        return res.status(500).json({ error: 'Failed to generate AI call script' });
+    }
+});
 
 
 // Get user's call history
@@ -514,14 +536,12 @@ app.post("/twilio/say", (req, res) => {
     const twiml = new VoiceResponse();
 
     twiml.say({
-        voice: "Polly.Joanna",     // High-quality TTS
+        voice: "Polly.Joanna",     
         language: "en-US"
     }, text);
 
     res.type("text/xml").send(twiml.toString());
 });
-
-
 
 /* SERVER */
 app.listen(3000, () => console.log('API running on http://localhost:3000'));
