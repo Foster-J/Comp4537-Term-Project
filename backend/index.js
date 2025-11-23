@@ -1,4 +1,5 @@
 require('dotenv').config();
+const twilio = require('twilio');
 
 const express = require('express');
 const jwt = require('jsonwebtoken');
@@ -12,32 +13,37 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+const twilioClient = twilio(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN
+);
+
 const isDevelopment = process.env.NODE_ENV !== 'production';
 console.log(`Environment: ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'} `);
 
 app.use(cors({
-    origin: function(origin, callback) {
+    origin: function (origin, callback) {
         // Allow requests with no origin (Postman, mobile apps, etc.)
         if (!origin) return callback(null, true);
-        
+
         console.log('🔍 Request from:', origin);
-        
+
         // DEVELOPMENT MODE: Allow all HTTP origins
         if (isDevelopment && origin.startsWith('http://')) {
             console.log('Allowed (dev):', origin);
             return callback(null, true);
         }
-        
+
         // PRODUCTION MODE: Whitelist only
         const productionOrigins = [
             'https://helpful-froyo-497ae3.netlify.app'
         ];
-        
+
         if (productionOrigins.includes(origin)) {
             console.log('Allowed (prod):', origin);
             return callback(null, true);
         }
-        
+
         console.log('CORS Blocked:', origin);
         callback(new Error('Not allowed by CORS'));
     },
@@ -314,11 +320,9 @@ app.get('/api/user/stats', auth, async (req, res) => {
     }
 });
 
-// AI Phone Call endpoint - Always saves to database
 app.post('/api/ai/call', auth, async (req, res) => {
     const { callerName, restaurantName, phoneNumber, script } = req.body;
-    
-    // Validation
+
     if (!callerName || !restaurantName || !phoneNumber || !script) {
         return res.status(400).json({ error: 'All fields required' });
     }
@@ -327,33 +331,35 @@ app.post('/api/ai/call', auth, async (req, res) => {
     if (!user) {
         return res.status(404).json({ error: 'User not found' });
     }
-    
-    // Increment API usage
+
     await db.query(`UPDATE users SET api_calls_used = api_calls_used + 1 WHERE id = ?`, [user.id]);
-    
+
     try {
-        // TODO: Call AI model / Twilio / phone service here
-        // Example: const result = await makeAICall(phoneNumber, script);
-        
-        // Save to database
+        // 🔥 MAKE THE PHONE CALL
+        const callSid = await makeTTSCall(phoneNumber, script);
+
+        // save to DB
         await db.query(
             `INSERT INTO call_history (user_id, caller_name, restaurant_name, phone_number, script, status, created_at)
              VALUES (?, ?, ?, ?, ?, 'completed', NOW())`,
             [user.id, callerName, restaurantName, phoneNumber, script]
         );
-        
+
         res.json({
             ok: true,
             status: 'Completed',
-            message: 'AI call has been initiated and saved to your history!',
+            message: 'AI call has started!',
+            callSid,
             apiCallsUsed: user.apiCallsUsed + 1,
             freeCallsRemaining: Math.max(0, 20 - (user.apiCallsUsed + 1))
         });
+
     } catch (error) {
         console.error('AI Call Error:', error);
         res.status(500).json({ error: 'Failed to initiate call' });
     }
 });
+
 
 // Get user's call history
 app.get('/api/user/call-history', auth, async (req, res) => {
@@ -366,7 +372,7 @@ app.get('/api/user/call-history', auth, async (req, res) => {
              LIMIT 10`,
             [req.user.uid]
         );
-        
+
         res.json({
             ok: true,
             calls: rows
@@ -424,6 +430,40 @@ app.get('/api/admin/stats', auth, isAdmin, async (_req, res) => {
         res.status(500).json({ error: 'Failed to fetch stats' });
     }
 });
+
+
+async function makeTTSCall(phoneNumber, text) {
+    try {
+        const call = await twilioClient.calls.create({
+            to: phoneNumber,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            url: `${process.env.PUBLIC_URL}/twilio/say?text=${encodeURIComponent(text)}`
+        });
+
+        console.log("📞 Call SID:", call.sid);
+        return call.sid;
+
+    } catch (err) {
+        console.error("❌ Twilio Error:", err);
+        throw err;
+    }
+}
+
+app.post("/twilio/say", (req, res) => {
+    const text = req.query.text || "Hello, this is an AI call.";
+
+    const VoiceResponse = twilio.twiml.VoiceResponse;
+    const twiml = new VoiceResponse();
+
+    twiml.say({
+        voice: "Polly.Joanna",     // High-quality TTS
+        language: "en-US"
+    }, text);
+
+    res.type("text/xml").send(twiml.toString());
+});
+
+
 
 /* SERVER */
 app.listen(3000, () => console.log('API running on http://localhost:3000'));
