@@ -14,6 +14,7 @@ const templates = {
         script: "Hi, my name is [Name] and I'm calling [Business] to inquire about your services. Could you please provide me with more information about your hours and pricing? Thank you!"
     }
 };
+
 async function get(path) {
     const r = await fetch(API + path, { credentials: 'include' });
     return r.json();
@@ -50,7 +51,6 @@ const recentCallsTable = document.getElementById('recentCallsTable');
         return;
     }
 
-    // Set user info
     userEmail.textContent = res.user.email;
 
     const userData = {
@@ -60,7 +60,6 @@ const recentCallsTable = document.getElementById('recentCallsTable');
 
     updateStats(userData.apiCallsUsed);
 
-    // Format member since date
     const date = new Date(userData.createdAt);
     memberSince.textContent = date.toLocaleDateString('en-US', {
         month: 'short',
@@ -71,6 +70,8 @@ const recentCallsTable = document.getElementById('recentCallsTable');
 
 // Update Stats Display
 function updateStats(used) {
+    if (!apiCallsUsed || !remainingCalls || !progressFill || !limitWarning) return;
+
     const remaining = Math.max(0, 20 - used);
     const percentage = Math.min(100, (used / 20) * 100);
 
@@ -83,7 +84,7 @@ function updateStats(used) {
     }
 }
 
-// Handle AI Command Submission
+// Handle AI Phone Call Submission → goes through backend, which calls hosted LLM
 callForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -102,6 +103,7 @@ callForm.addEventListener('submit', async (e) => {
     resultBox.classList.add('d-none');
 
     try {
+        // Send data to backend; backend will call the hosted LLM
         const response = await post('/api/ai/call', {
             callerName,
             restaurantName,
@@ -109,31 +111,38 @@ callForm.addEventListener('submit', async (e) => {
             script: callScript
         });
 
-        if (response.error) {
-            alert('Error: ' + response.error);
+        console.log('API /api/ai/call response:', response);
+        console.log('AI script from backend:', response.aiScript);
+
+        if (!response.ok) {
+            alert('Error: ' + (response.error || 'Unknown error'));
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Make AI Phone Call';
             return;
         }
 
+        // Show AI-generated call script / status
         resultContent.innerHTML = `
             <strong>Call Details:</strong><br>
             Restaurant: ${restaurantName}<br>
             Phone: ${phoneNumber}<br>
-            Status: ${response.status || 'Initiated'}<br>
-            ${response.message || 'AI is making the call now...'}
+            Status: ${response.status || 'Completed'}<br>
+            <br>
+            <strong>AI Call Script:</strong><br>
+            ${response.aiScript || response.message || 'No script returned'}
         `;
         resultBox.classList.remove('d-none');
 
-        if (response.apiCallsUsed !== undefined) {
+        if (typeof response.apiCallsUsed === 'number') {
             updateStats(response.apiCallsUsed);
         }
 
+        // Update recent calls table
         addRecentCall(restaurantName, phoneNumber);
-
-        callForm.reset();
 
     } catch (error) {
         alert('Network error. Please try again.');
-        console.error(error);
+        console.error('Error calling /api/ai/call:', error);
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Make AI Phone Call';
@@ -165,7 +174,7 @@ async function loadRecentCalls() {
                     <td>${new Date(call.created_at).toLocaleString()}</td>
                     <td>${call.restaurant_name}</td>
                     <td>${call.phone_number}</td>
-                    <td><span class="badge bg-success">Completed</span></td>
+                    <td><span class="badge bg-success">${call.status || 'Completed'}</span></td>
                 </tr>
             `).join('');
         }
@@ -176,6 +185,8 @@ async function loadRecentCalls() {
 
 // Add Recent Call to table
 function addRecentCall(restaurant, phone) {
+    if (!recentCallsTable) return;
+
     const now = new Date();
     const row = `
         <tr>
@@ -186,7 +197,7 @@ function addRecentCall(restaurant, phone) {
         </tr>
     `;
 
-    if (recentCallsTable.firstChild.textContent.includes('No recent calls')) {
+    if (recentCallsTable.firstChild && recentCallsTable.firstChild.textContent.includes('No recent calls')) {
         recentCallsTable.innerHTML = '';
     }
 

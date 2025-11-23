@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-
+const axios = require('axios');
 const db = require('./databaseConnection');
 
 const app = express();
@@ -14,9 +14,9 @@ app.use(cookieParser());
 app.use(cors({
     origin: [
         'http://localhost:5500',
-        'http://127.0.0.1:5500',          // ← ADD THIS
+        'http://127.0.0.1:5500',
         'http://localhost:3000',
-        'http://127.0.0.1:3000',          // ← ADD THIS
+        'http://127.0.0.1:3000',
         'https://helpful-froyo-497ae3.netlify.app'
     ],
     credentials: true,
@@ -38,6 +38,12 @@ app.use((req, res, next) => {
 });
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Hosted LLM config – set these in .env
+// LLM_URL=https://llm.comp4537.com
+// LLM_API_TOKEN=super_secret_token_123456
+const LLM_URL = process.env.LLM_URL || 'https://llm.comp4537.com';
+const LLM_API_TOKEN = process.env.LLM_API_TOKEN;
 
 // -----------------------------------------
 // Initialize database and seed default users
@@ -69,7 +75,6 @@ async function initDb() {
     ) ENGINE=InnoDB;
 `);
 
-    // Seed the two demo accounts if missing
     const [rows] = await db.query(
         `SELECT email FROM users WHERE email IN ('gugu@gugu.com','admin@admin.com')`
     );
@@ -101,7 +106,6 @@ initDb()
 // Helper functions
 // -----------------------------------------
 
-// sign a JWT token
 function sign(user) {
     return jwt.sign(
         { uid: user.id, role: user.role, email: user.email },
@@ -110,7 +114,6 @@ function sign(user) {
     );
 }
 
-// Get user by ID from DB
 async function getUserById(id) {
     const [rows] = await db.query(
         `SELECT id, email, role, api_calls_used, created_at, last_login
@@ -133,7 +136,6 @@ async function getUserById(id) {
 // Authentication middleware
 // -----------------------------------------
 
-// check if token exists and is valid 
 function auth(req, res, next) {
     const token = req.cookies.token;
     if (!token) return res.status(401).json({ error: 'unauthorized' });
@@ -145,7 +147,6 @@ function auth(req, res, next) {
     }
 }
 
-// Check if user is admin
 function isAdmin(req, res, next) {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
@@ -157,29 +158,19 @@ function isAdmin(req, res, next) {
 // AUTH ROUTES
 // -----------------------------------------
 
-// Register new user
 app.post('/auth/register', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Validation
         if (!email || !password) {
             return res.status(400).json({ error: 'All fields required' });
         }
-        // Password minimum length check disabled for testing purposes.
-        // To re-enable, either restore the check below or use an env flag
-        // e.g. if (process.env.ENFORCE_PASSWORD_MIN === 'true' && password.length < 8) { ... }
-        // if (password.length < 8) {
-        //     return res.status(400).json({ error: 'Password must be at least 8 characters' });
-        // }
 
-        // Already exists?
         const [exists] = await db.query(`SELECT id FROM users WHERE email = ? LIMIT 1`, [email]);
         if (exists.length) {
             return res.status(409).json({ error: 'Email already registered' });
         }
 
-        // Create new user
         const passHash = await bcrypt.hash(password, 10);
         await db.query(
             `INSERT INTO users (email, password_hash, role, api_calls_used, created_at, last_login)
@@ -208,12 +199,10 @@ app.post('/auth/login', async (req, res) => {
         const ok = await bcrypt.compare(password, userRow.password_hash);
         if (!ok) return res.status(401).json({ error: 'bad creds' });
 
-        // Update last login
         await db.query(`UPDATE users SET last_login = NOW() WHERE id = ?`, [userRow.id]);
 
         const token = sign({ id: userRow.id, role: userRow.role, email: userRow.email });
 
-        // Send cookie to browser
         res.cookie('token', token, {
             httpOnly: true,
             secure: true,
@@ -228,7 +217,6 @@ app.post('/auth/login', async (req, res) => {
                 email: userRow.email,
                 role: userRow.role
             },
-            // Redirect based on user role
             redirectTo: userRow.role === 'admin' ? 'admin.html' : 'main.html'
         });
     } catch (e) {
@@ -247,7 +235,6 @@ app.post('/auth/logout', (req, res) => {
     res.json({ ok: true });
 });
 
-// Get user dashboard data (protected)
 app.get('/auth/main', auth, async (req, res) => {
     try {
         const user = await getUserById(req.user.uid);
@@ -271,7 +258,6 @@ app.get('/auth/main', auth, async (req, res) => {
 
 /* API ROUTES */
 
-// Get user's API usage stats (protected)
 app.get('/api/user/stats', auth, async (req, res) => {
     try {
         const user = await getUserById(req.user.uid);
@@ -292,11 +278,9 @@ app.get('/api/user/stats', auth, async (req, res) => {
     }
 });
 
-// AI Phone Call endpoint - Always saves to database
 app.post('/api/ai/call', auth, async (req, res) => {
     const { callerName, restaurantName, phoneNumber, script } = req.body;
-    
-    // Validation
+
     if (!callerName || !restaurantName || !phoneNumber || !script) {
         return res.status(400).json({ error: 'All fields required' });
     }
@@ -305,31 +289,60 @@ app.post('/api/ai/call', auth, async (req, res) => {
     if (!user) {
         return res.status(404).json({ error: 'User not found' });
     }
-    
-    // Increment API usage
+
     await db.query(`UPDATE users SET api_calls_used = api_calls_used + 1 WHERE id = ?`, [user.id]);
-    
+    const newApiCount = user.apiCallsUsed + 1;
+
     try {
-        // TODO: Call AI model / Twilio / phone service here
-        // Example: const result = await makeAICall(phoneNumber, script);
-        
-        // Save to database
+        if (!LLM_API_TOKEN) {
+            console.error('LLM_API_TOKEN is not set');
+            return res.status(500).json({ error: 'LLM server not configured' });
+        }
+
+        const inputPrompt =
+            `You are calling a restaurant on behalf of a client to place an order. ` +
+            `Speak casually. Your job is to introduce yourself as an AI bot from the Company UpScaling, ` +
+            `explain that you are calling on behalf of the client, state the client’s name and order clearly, ` +
+            `but do not request confirmation. Do NOT output JSON in your answer. Do NOT mention JSON. ` +
+            `Just speak as if you are making the call. ` +
+            `Here is the order data you should use (this is for you, the AI, and should NOT be repeated as JSON in your answer): ` +
+            `{ "client": "${callerName}", "restaurant": "${restaurantName}", "order": "${script}" }`;
+
+        const llmResponse = await axios.post(
+            `${LLM_URL}/chat`,
+            { input: inputPrompt },
+            {
+                headers: {
+                    Authorization: `Bearer ${LLM_API_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 60000
+            }
+        );
+
+        const aiOutput = llmResponse.data.output || '';
+
+        // >>> LOG HERE <<<
+        console.log('LLM raw response:', llmResponse.data);
+        console.log('LLM generated script:', aiOutput);
+
         await db.query(
             `INSERT INTO call_history (user_id, caller_name, restaurant_name, phone_number, script, status, created_at)
              VALUES (?, ?, ?, ?, ?, 'completed', NOW())`,
-            [user.id, callerName, restaurantName, phoneNumber, script]
+            [user.id, callerName, restaurantName, phoneNumber, aiOutput || script]
         );
-        
+
         res.json({
             ok: true,
             status: 'Completed',
-            message: 'AI call has been initiated and saved to your history!',
-            apiCallsUsed: user.apiCallsUsed + 1,
-            freeCallsRemaining: Math.max(0, 20 - (user.apiCallsUsed + 1))
+            message: 'AI call script generated and saved to your history.',
+            aiScript: aiOutput,
+            apiCallsUsed: newApiCount,
+            freeCallsRemaining: Math.max(0, 20 - newApiCount)
         });
     } catch (error) {
-        console.error('AI Call Error:', error);
-        res.status(500).json({ error: 'Failed to initiate call' });
+        console.error('AI Call Error:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Failed to generate AI call script' });
     }
 });
 
@@ -344,7 +357,7 @@ app.get('/api/user/call-history', auth, async (req, res) => {
              LIMIT 10`,
             [req.user.uid]
         );
-        
+
         res.json({
             ok: true,
             calls: rows
@@ -357,7 +370,6 @@ app.get('/api/user/call-history', auth, async (req, res) => {
 
 /* ADMIN ROUTES */
 
-// Get all users (admin only)
 app.get('/api/admin/users', auth, isAdmin, async (_req, res) => {
     try {
         const [rows] = await db.query(
@@ -380,7 +392,6 @@ app.get('/api/admin/users', auth, isAdmin, async (_req, res) => {
     }
 });
 
-// Get system stats (admin only)
 app.get('/api/admin/stats', auth, isAdmin, async (_req, res) => {
     try {
         const [[tot]] = await db.query(`SELECT COUNT(*) AS total_users FROM users`);
@@ -400,6 +411,44 @@ app.get('/api/admin/stats', auth, isAdmin, async (_req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// Generic AI chat endpoint (optional, uses same hosted LLM)
+app.post('/api/ai/chat', auth, async (req, res) => {
+    try {
+        const { input } = req.body;
+
+        if (!input) {
+            return res.status(400).json({ error: 'input is required' });
+        }
+
+        if (!LLM_API_TOKEN) {
+            console.error('LLM_API_TOKEN is not set');
+            return res.status(500).json({ error: 'LLM server not configured' });
+        }
+
+        const response = await axios.post(
+            `${LLM_URL}/chat`,
+            { input },
+            {
+                headers: {
+                    Authorization: `Bearer ${LLM_API_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 60000
+            }
+        );
+
+        const aiOutput = response.data.output;
+
+        return res.json({
+            ok: true,
+            output: aiOutput
+        });
+    } catch (e) {
+        console.error('AI chat failed:', e.response?.data || e.message);
+        return res.status(500).json({ error: 'AI server error' });
     }
 });
 
