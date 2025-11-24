@@ -28,6 +28,68 @@ const STRINGS = {
         SUCCESS_LOGIN: 'Login successful! Redirecting...'
     },
     
+    // Main Dashboard
+    MAIN: {
+        // Navigation
+        NAV_TITLE: 'AI Phone Call Service',
+        NAV_LOGOUT: 'Logout',
+        USER_EMAIL_LOADING: 'Loading...',
+        
+        // Form Section
+        FORM_TITLE: 'Create Phone Call Script',
+        LABEL_YOUR_NAME: 'Your Name',
+        LABEL_RESTAURANT_NAME: 'Restaurant Name',
+        LABEL_PHONE_NUMBER: 'Phone Number',
+        LABEL_CALL_SCRIPT: 'Call Script',
+        
+        PLACEHOLDER_NAME: 'John Doe',
+        PLACEHOLDER_RESTAURANT: 'Nav Sweets',
+        PLACEHOLDER_PHONE: '+1 (555) 123-4567',
+        PLACEHOLDER_SCRIPT: "Hi, my name is [Your Name] and I'd like to make a reservation for 4 people at 7pm this Friday...",
+        
+        HELP_PHONE: 'Include country code (e.g., +1 for USA/Canada)',
+        HELP_SCRIPT: 'Write what you want the AI to say on the phone call',
+        
+        BUTTON_SUBMIT: 'Make AI Phone Call',
+        BUTTON_PROCESSING: 'Processing...',
+        
+        // Progress Bar
+        PROGRESS_TITLE: 'Free Tier Progress',
+        PROGRESS_TEXT: '0 / 20 calls',
+        
+        // Result Messages
+        RESULT_SUCCESS_TITLE: 'Call Initiated Successfully!',
+        RESULT_ERROR_TITLE: 'Call Failed',
+        
+        // Tips Section
+        TIPS_TITLE: 'Script Writing Tips',
+        TIP_1: 'Keep it natural and conversational',
+        TIP_2: 'Include all necessary details',
+        TIP_3: 'Be polite and professional',
+        TIP_4: 'Mention your name clearly',
+        TIP_5: 'Specify date, time, and party size',
+        
+        // Templates Section
+        TEMPLATES_TITLE: 'Quick Templates',
+        TEMPLATE_RESERVATION: 'Restaurant Reservation',
+        TEMPLATE_APPOINTMENT: 'Appointment Booking',
+        TEMPLATE_INQUIRY: 'General Inquiry',
+        BUTTON_CLEAR_FORM: 'Clear Form',
+        
+        // Recent Calls Section
+        RECENT_CALLS_TITLE: 'Recent Calls',
+        TABLE_HEADER_TIME: 'Time',
+        TABLE_HEADER_RESTAURANT: 'Restaurant',
+        TABLE_HEADER_PHONE: 'Phone Number',
+        TABLE_HEADER_STATUS: 'Status',
+        TABLE_NO_CALLS: 'No recent calls',
+        
+        // Error messages
+        ERROR_ALL_FIELDS: 'Please fill in all fields',
+        ERROR_NETWORK: 'Network error. Please try again.',
+        ERROR_UNKNOWN: 'Unknown error'
+    },
+    
     // API Call page
     API_CALL: {
         TITLE: 'Make AI Call',

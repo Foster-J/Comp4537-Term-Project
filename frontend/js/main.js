@@ -2,6 +2,109 @@ const API = (window.location.hostname === 'localhost' || window.location.hostnam
     ? 'http://localhost:3000'
     : 'https://comp4537-term-project-29ei.onrender.com';
 
+
+// Initialize page text from strings file
+document.addEventListener('DOMContentLoaded', () => {
+    initializeStrings();
+});
+
+function initializeStrings() {
+    // Navigation
+    const navTitle = document.getElementById('navTitle');
+    const logoutText = document.getElementById('logoutText');
+    const userEmail = document.getElementById('userEmail');
+    
+    if (navTitle) navTitle.textContent = STRINGS.MAIN.NAV_TITLE;
+    if (logoutText) logoutText.textContent = STRINGS.MAIN.NAV_LOGOUT;
+    if (userEmail) userEmail.textContent = STRINGS.MAIN.USER_EMAIL_LOADING;
+    
+    // Form Section
+    const formTitle = document.getElementById('formTitle');
+    const labelYourName = document.getElementById('labelYourName');
+    const labelRestaurantName = document.getElementById('labelRestaurantName');
+    const labelPhoneNumber = document.getElementById('labelPhoneNumber');
+    const labelCallScript = document.getElementById('labelCallScript');
+    
+    if (formTitle) formTitle.textContent = STRINGS.MAIN.FORM_TITLE;
+    if (labelYourName) labelYourName.textContent = STRINGS.MAIN.LABEL_YOUR_NAME;
+    if (labelRestaurantName) labelRestaurantName.textContent = STRINGS.MAIN.LABEL_RESTAURANT_NAME;
+    if (labelPhoneNumber) labelPhoneNumber.textContent = STRINGS.MAIN.LABEL_PHONE_NUMBER;
+    if (labelCallScript) labelCallScript.textContent = STRINGS.MAIN.LABEL_CALL_SCRIPT;
+    
+    // Placeholders
+    const callerName = document.getElementById('callerName');
+    const restaurantName = document.getElementById('restaurantName');
+    const phoneNumber = document.getElementById('phoneNumber');
+    const callScript = document.getElementById('callScript');
+    
+    if (callerName) callerName.placeholder = STRINGS.MAIN.PLACEHOLDER_NAME;
+    if (restaurantName) restaurantName.placeholder = STRINGS.MAIN.PLACEHOLDER_RESTAURANT;
+    if (phoneNumber) phoneNumber.placeholder = STRINGS.MAIN.PLACEHOLDER_PHONE;
+    if (callScript) callScript.placeholder = STRINGS.MAIN.PLACEHOLDER_SCRIPT;
+    
+    // Help text
+    const helpPhone = document.getElementById('helpPhone');
+    const helpScript = document.getElementById('helpScript');
+    
+    if (helpPhone) helpPhone.textContent = STRINGS.MAIN.HELP_PHONE;
+    if (helpScript) helpScript.textContent = STRINGS.MAIN.HELP_SCRIPT;
+    
+    // Buttons
+    const submitBtnText = document.getElementById('submitBtnText');
+    if (submitBtnText) submitBtnText.textContent = STRINGS.MAIN.BUTTON_SUBMIT;
+    
+    // Progress Bar
+    const progressTitle = document.getElementById('progressTitle');
+    if (progressTitle) progressTitle.textContent = STRINGS.MAIN.PROGRESS_TITLE;
+    
+    // Result
+    const resultTitle = document.getElementById('resultTitle');
+    if (resultTitle) resultTitle.textContent = STRINGS.MAIN.RESULT_SUCCESS_TITLE;
+    
+    // Tips
+    const tipsTitle = document.getElementById('tipsTitle');
+    const tip1 = document.getElementById('tip1');
+    const tip2 = document.getElementById('tip2');
+    const tip3 = document.getElementById('tip3');
+    const tip4 = document.getElementById('tip4');
+    const tip5 = document.getElementById('tip5');
+    
+    if (tipsTitle) tipsTitle.textContent = STRINGS.MAIN.TIPS_TITLE;
+    if (tip1) tip1.textContent = STRINGS.MAIN.TIP_1;
+    if (tip2) tip2.textContent = STRINGS.MAIN.TIP_2;
+    if (tip3) tip3.textContent = STRINGS.MAIN.TIP_3;
+    if (tip4) tip4.textContent = STRINGS.MAIN.TIP_4;
+    if (tip5) tip5.textContent = STRINGS.MAIN.TIP_5;
+    
+    // Templates
+    const templatesTitle = document.getElementById('templatesTitle');
+    const templateReservation = document.getElementById('templateReservation');
+    const templateAppointment = document.getElementById('templateAppointment');
+    const templateInquiry = document.getElementById('templateInquiry');
+    const clearForm = document.getElementById('clearForm');
+    
+    if (templatesTitle) templatesTitle.textContent = STRINGS.MAIN.TEMPLATES_TITLE;
+    if (templateReservation) templateReservation.textContent = STRINGS.MAIN.TEMPLATE_RESERVATION;
+    if (templateAppointment) templateAppointment.textContent = STRINGS.MAIN.TEMPLATE_APPOINTMENT;
+    if (templateInquiry) templateInquiry.textContent = STRINGS.MAIN.TEMPLATE_INQUIRY;
+    if (clearForm) clearForm.textContent = STRINGS.MAIN.BUTTON_CLEAR_FORM;
+    
+    // Recent Calls
+    const recentCallsTitle = document.getElementById('recentCallsTitle');
+    const tableHeaderTime = document.getElementById('tableHeaderTime');
+    const tableHeaderRestaurant = document.getElementById('tableHeaderRestaurant');
+    const tableHeaderPhone = document.getElementById('tableHeaderPhone');
+    const tableHeaderStatus = document.getElementById('tableHeaderStatus');
+    const tableNoCalls = document.getElementById('tableNoCalls');
+    
+    if (recentCallsTitle) recentCallsTitle.textContent = STRINGS.MAIN.RECENT_CALLS_TITLE;
+    if (tableHeaderTime) tableHeaderTime.textContent = STRINGS.MAIN.TABLE_HEADER_TIME;
+    if (tableHeaderRestaurant) tableHeaderRestaurant.textContent = STRINGS.MAIN.TABLE_HEADER_RESTAURANT;
+    if (tableHeaderPhone) tableHeaderPhone.textContent = STRINGS.MAIN.TABLE_HEADER_PHONE;
+    if (tableHeaderStatus) tableHeaderStatus.textContent = STRINGS.MAIN.TABLE_HEADER_STATUS;
+    if (tableNoCalls) tableNoCalls.textContent = STRINGS.MAIN.TABLE_NO_CALLS;
+}
+
 // Templates
 const templates = {
     reservation: {
