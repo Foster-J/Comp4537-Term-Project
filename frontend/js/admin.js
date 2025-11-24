@@ -2,7 +2,7 @@
 
 const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:3000'
-    : 'https://unsparked-unperturbedly-dahlia.ngrok-f';
+    : 'https://comp4537-term-project-29ei.onrender.com';
 
 // Helper functions
 async function get(path) {

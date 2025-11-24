@@ -5,7 +5,7 @@ const isLocal = window.location.hostname === 'localhost' ||
 // Set API URL based on environment
 const API = isLocal 
     ? 'http://localhost:3000'
-    : 'https://unsparked-unperturbedly-dahlia.ngrok-f';
+    : 'https://comp4537-term-project-29ei.onrender.com';
 
 // Log environment for debugging
 console.log(`Environment: ${isLocal ? 'LOCAL' : 'PRODUCTION'}`);
