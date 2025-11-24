@@ -28,6 +28,40 @@ const STRINGS = {
         SUCCESS_LOGIN: 'Login successful! Redirecting...'
     },
     
+    // Signup/Registration page
+    SIGNUP: {
+        TITLE: 'Create Account',
+        SUBTITLE: 'Fill in your details to get started',
+        
+        // Form labels
+        LABEL_EMAIL: 'Email Address',
+        LABEL_PASSWORD: 'Password',
+        LABEL_CONFIRM_PASSWORD: 'Confirm Password',
+        
+        // Placeholders
+        PLACEHOLDER_EMAIL: 'your.email@example.com',
+        
+        // Button text
+        BUTTON_SUBMIT: 'Create Account',
+        BUTTON_LOADING: 'Creating Account...',
+        
+        // Password matching
+        PASSWORD_MATCH: '✓ Passwords match',
+        PASSWORD_NO_MATCH: '✗ Passwords do not match',
+        
+        // Links
+        LOGIN_TEXT: 'Already have an account?',
+        LOGIN_LINK: 'Sign in here',
+        
+        // Success messages
+        SUCCESS_REGISTRATION: '✓ Registration successful! Redirecting to login...',
+        
+        // Error messages
+        ERROR_PASSWORDS_NO_MATCH: 'Passwords do not match!',
+        ERROR_REGISTRATION_FAILED: 'Registration failed. Please try again.',
+        ERROR_NETWORK: 'Network error. Please check your connection and try again.'
+    },
+    
     // Admin Dashboard
     ADMIN: {
         // Navigation

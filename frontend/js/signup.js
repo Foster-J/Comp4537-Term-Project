@@ -1,6 +1,44 @@
 const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:3000'
     : 'https://comp4537-term-project-29ei.onrender.com';
+    
+// Initialize page text from strings file
+document.addEventListener('DOMContentLoaded', () => {
+    initializeStrings();
+});
+
+function initializeStrings() {
+    // Page title and subtitle
+    const signupTitle = document.getElementById('signupTitle');
+    const signupSubtitle = document.getElementById('signupSubtitle');
+    
+    if (signupTitle) signupTitle.textContent = STRINGS.SIGNUP.TITLE;
+    if (signupSubtitle) signupSubtitle.textContent = STRINGS.SIGNUP.SUBTITLE;
+    
+    // Form labels
+    const labelEmail = document.getElementById('labelEmail');
+    const labelPassword = document.getElementById('labelPassword');
+    const labelConfirmPassword = document.getElementById('labelConfirmPassword');
+    
+    if (labelEmail) labelEmail.textContent = STRINGS.SIGNUP.LABEL_EMAIL;
+    if (labelPassword) labelPassword.textContent = STRINGS.SIGNUP.LABEL_PASSWORD;
+    if (labelConfirmPassword) labelConfirmPassword.textContent = STRINGS.SIGNUP.LABEL_CONFIRM_PASSWORD;
+    
+    // Placeholders
+    const emailInput = document.getElementById('email');
+    if (emailInput) emailInput.placeholder = STRINGS.SIGNUP.PLACEHOLDER_EMAIL;
+    
+    // Button text
+    const registerBtnText = document.getElementById('registerBtnText');
+    if (registerBtnText) registerBtnText.textContent = STRINGS.SIGNUP.BUTTON_SUBMIT;
+    
+    // Login link
+    const loginText = document.getElementById('loginText');
+    const loginLink = document.getElementById('loginLink');
+    
+    if (loginText) loginText.textContent = STRINGS.SIGNUP.LOGIN_TEXT;
+    if (loginLink) loginLink.textContent = STRINGS.SIGNUP.LOGIN_LINK;
+}
 
 // DOM Elements
 const form = document.getElementById('registrationForm');
