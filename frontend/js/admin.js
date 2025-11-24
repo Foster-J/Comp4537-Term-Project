@@ -4,6 +4,120 @@ const API = (window.location.hostname === 'localhost' || window.location.hostnam
     ? 'http://localhost:3000'
     : 'https://comp4537-term-project-29ei.onrender.com';
 
+// Initialize page text from strings file
+document.addEventListener('DOMContentLoaded', () => {
+    initializeStrings();
+    loadDashboard();
+});
+
+function initializeStrings() {
+    // Navigation
+    const navTitle = document.getElementById('navTitle');
+    const adminBadge = document.getElementById('adminBadge');
+    const logoutText = document.getElementById('logoutText');
+    const adminEmail = document.getElementById('adminEmail');
+    
+    if (navTitle) navTitle.textContent = STRINGS.ADMIN.NAV_TITLE;
+    if (adminBadge) adminBadge.textContent = STRINGS.ADMIN.NAV_BADGE;
+    if (logoutText) logoutText.textContent = STRINGS.ADMIN.NAV_LOGOUT;
+    if (adminEmail) adminEmail.textContent = STRINGS.ADMIN.ADMIN_EMAIL_LOADING;
+    
+    // Hero Section
+    const heroTitle = document.getElementById('heroTitle');
+    const heroSubtitle = document.getElementById('heroSubtitle');
+    
+    if (heroTitle) heroTitle.textContent = STRINGS.ADMIN.HERO_TITLE;
+    if (heroSubtitle) heroSubtitle.textContent = STRINGS.ADMIN.HERO_SUBTITLE;
+    
+    // System Stats Labels
+    const statTotalUsersLabel = document.getElementById('statTotalUsersLabel');
+    const statTotalApiCallsLabel = document.getElementById('statTotalApiCallsLabel');
+    const statActiveUsersLabel = document.getElementById('statActiveUsersLabel');
+    const statOverLimitLabel = document.getElementById('statOverLimitLabel');
+    
+    if (statTotalUsersLabel) statTotalUsersLabel.textContent = STRINGS.ADMIN.STAT_TOTAL_USERS;
+    if (statTotalApiCallsLabel) statTotalApiCallsLabel.textContent = STRINGS.ADMIN.STAT_TOTAL_API_CALLS;
+    if (statActiveUsersLabel) statActiveUsersLabel.textContent = STRINGS.ADMIN.STAT_ACTIVE_USERS;
+    if (statOverLimitLabel) statOverLimitLabel.textContent = STRINGS.ADMIN.STAT_OVER_LIMIT;
+    
+    // System Stats Descriptions
+    const statUsersDesc = document.getElementById('statUsersDesc');
+    const statApiCallsDesc = document.getElementById('statApiCallsDesc');
+    const statActiveDesc = document.getElementById('statActiveDesc');
+    const statOverLimitDesc = document.getElementById('statOverLimitDesc');
+    
+    if (statUsersDesc) statUsersDesc.textContent = STRINGS.ADMIN.STAT_USERS_DESC;
+    if (statApiCallsDesc) statApiCallsDesc.textContent = STRINGS.ADMIN.STAT_API_CALLS_DESC;
+    if (statActiveDesc) statActiveDesc.textContent = STRINGS.ADMIN.STAT_ACTIVE_DESC;
+    if (statOverLimitDesc) statOverLimitDesc.textContent = STRINGS.ADMIN.STAT_OVER_LIMIT_DESC;
+    
+    // Endpoint Statistics Section
+    const endpointStatsTitle = document.getElementById('endpointStatsTitle');
+    const endpointTotalLabel = document.getElementById('endpointTotalLabel');
+    const endpointRefreshBtn = document.getElementById('endpointRefreshBtn');
+    const endpointMethodHeader = document.getElementById('endpointMethodHeader');
+    const endpointPathHeader = document.getElementById('endpointPathHeader');
+    const endpointRequestsHeader = document.getElementById('endpointRequestsHeader');
+    const endpointLastAccessedHeader = document.getElementById('endpointLastAccessedHeader');
+    const endpointLoadingText = document.getElementById('endpointLoadingText');
+    
+    if (endpointStatsTitle) endpointStatsTitle.textContent = STRINGS.ADMIN.ENDPOINT_STATS_TITLE;
+    if (endpointTotalLabel) endpointTotalLabel.textContent = STRINGS.ADMIN.ENDPOINT_TOTAL_REQUESTS;
+    if (endpointRefreshBtn) endpointRefreshBtn.textContent = STRINGS.ADMIN.ENDPOINT_REFRESH;
+    if (endpointMethodHeader) endpointMethodHeader.textContent = STRINGS.ADMIN.ENDPOINT_METHOD;
+    if (endpointPathHeader) endpointPathHeader.textContent = STRINGS.ADMIN.ENDPOINT_ENDPOINT;
+    if (endpointRequestsHeader) endpointRequestsHeader.textContent = STRINGS.ADMIN.ENDPOINT_REQUESTS;
+    if (endpointLastAccessedHeader) endpointLastAccessedHeader.textContent = STRINGS.ADMIN.ENDPOINT_LAST_ACCESSED;
+    if (endpointLoadingText) endpointLoadingText.textContent = STRINGS.ADMIN.ENDPOINT_LOADING;
+    
+    // User Management Section
+    const userMgmtTitle = document.getElementById('userMgmtTitle');
+    const refreshBtnText = document.getElementById('refreshBtnText');
+    const searchInput = document.getElementById('searchInput');
+    const loadingUserText = document.getElementById('loadingUserText');
+    const spinnerText = document.getElementById('spinnerText');
+    
+    if (userMgmtTitle) userMgmtTitle.textContent = STRINGS.ADMIN.USER_MGMT_TITLE;
+    if (refreshBtnText) refreshBtnText.textContent = STRINGS.ADMIN.BUTTON_REFRESH;
+    if (searchInput) searchInput.placeholder = STRINGS.ADMIN.USER_SEARCH_PLACEHOLDER;
+    if (loadingUserText) loadingUserText.textContent = STRINGS.ADMIN.USER_LOADING;
+    if (spinnerText) spinnerText.textContent = STRINGS.ADMIN.SPINNER_LOADING;
+    
+    // User Table Headers
+    const userTableId = document.getElementById('userTableId');
+    const userTableEmail = document.getElementById('userTableEmail');
+    const userTableRole = document.getElementById('userTableRole');
+    const userTableApiCalls = document.getElementById('userTableApiCalls');
+    const userTableCreated = document.getElementById('userTableCreated');
+    const userTableLastLogin = document.getElementById('userTableLastLogin');
+    const userTableStatus = document.getElementById('userTableStatus');
+    const userTableNoUsers = document.getElementById('userTableNoUsers');
+    
+    if (userTableId) userTableId.textContent = STRINGS.ADMIN.USER_TABLE_ID;
+    if (userTableEmail) userTableEmail.textContent = STRINGS.ADMIN.USER_TABLE_EMAIL;
+    if (userTableRole) userTableRole.textContent = STRINGS.ADMIN.USER_TABLE_ROLE;
+    if (userTableApiCalls) userTableApiCalls.textContent = STRINGS.ADMIN.USER_TABLE_API_CALLS;
+    if (userTableCreated) userTableCreated.textContent = STRINGS.ADMIN.USER_TABLE_CREATED;
+    if (userTableLastLogin) userTableLastLogin.textContent = STRINGS.ADMIN.USER_TABLE_LAST_LOGIN;
+    if (userTableStatus) userTableStatus.textContent = STRINGS.ADMIN.USER_TABLE_STATUS;
+    if (userTableNoUsers) userTableNoUsers.textContent = STRINGS.ADMIN.USER_NO_USERS;
+    
+    // Distribution Section
+    const topUsersTitle = document.getElementById('topUsersTitle');
+    const distributionTitle = document.getElementById('distributionTitle');
+    const regularUsersLabel = document.getElementById('regularUsersLabel');
+    const adminUsersLabel = document.getElementById('adminUsersLabel');
+    const avgApiCallsLabel = document.getElementById('avgApiCallsLabel');
+    const limitExceededLabel = document.getElementById('limitExceededLabel');
+    
+    if (topUsersTitle) topUsersTitle.textContent = STRINGS.ADMIN.TOP_USERS_TITLE;
+    if (distributionTitle) distributionTitle.textContent = STRINGS.ADMIN.DISTRIBUTION_TITLE;
+    if (regularUsersLabel) regularUsersLabel.textContent = STRINGS.ADMIN.DISTRIBUTION_REGULAR;
+    if (adminUsersLabel) adminUsersLabel.textContent = STRINGS.ADMIN.DISTRIBUTION_ADMIN;
+    if (avgApiCallsLabel) avgApiCallsLabel.textContent = STRINGS.ADMIN.DISTRIBUTION_AVG;
+    if (limitExceededLabel) limitExceededLabel.textContent = STRINGS.ADMIN.DISTRIBUTION_OVER_LIMIT;
+}
+
 // Helper functions
 async function get(path) {
     const r = await fetch(API + path, {

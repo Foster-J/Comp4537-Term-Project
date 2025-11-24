@@ -28,6 +28,85 @@ const STRINGS = {
         SUCCESS_LOGIN: 'Login successful! Redirecting...'
     },
     
+    // Admin Dashboard
+    ADMIN: {
+        // Navigation
+        NAV_TITLE: 'Admin Control Panel',
+        NAV_BADGE: 'ADMIN',
+        NAV_LOGOUT: 'Logout',
+        ADMIN_EMAIL_LOADING: 'Loading...',
+        
+        // Hero Section
+        HERO_TITLE: 'System Administration Dashboard',
+        HERO_SUBTITLE: 'Monitor users and track API usage',
+        
+        // System Stats Cards
+        STAT_TOTAL_USERS: 'TOTAL USERS',
+        STAT_TOTAL_API_CALLS: 'TOTAL API CALLS',
+        STAT_ACTIVE_USERS: 'ACTIVE USERS',
+        STAT_OVER_LIMIT: 'OVER LIMIT',
+        
+        STAT_USERS_DESC: 'Registered accounts',
+        STAT_API_CALLS_DESC: 'All-time commands',
+        STAT_ACTIVE_DESC: 'Users with activity',
+        STAT_OVER_LIMIT_DESC: 'Exceeded 20 free calls',
+        
+        // Endpoint Statistics
+        ENDPOINT_STATS_TITLE: 'API Endpoint Statistics',
+        ENDPOINT_TOTAL_REQUESTS: 'Total Requests:',
+        ENDPOINT_REFRESH: 'Refresh',
+        ENDPOINT_METHOD: 'Method',
+        ENDPOINT_ENDPOINT: 'Endpoint',
+        ENDPOINT_REQUESTS: 'Requests',
+        ENDPOINT_LAST_ACCESSED: 'Last Accessed',
+        ENDPOINT_LOADING: 'Loading endpoint statistics...',
+        ENDPOINT_NO_DATA: 'No endpoint data available',
+        ENDPOINT_LOAD_ERROR: 'Failed to load endpoint statistics',
+        
+        // User Management
+        USER_MGMT_TITLE: 'User Management',
+        USER_SEARCH_PLACEHOLDER: 'Search by email or name...',
+        USER_LOADING: 'Loading user data...',
+        USER_TABLE_ID: 'ID',
+        USER_TABLE_EMAIL: 'Email',
+        USER_TABLE_ROLE: 'Role',
+        USER_TABLE_API_CALLS: 'API Calls Used',
+        USER_TABLE_CREATED: 'Created At',
+        USER_TABLE_LAST_LOGIN: 'Last Login',
+        USER_TABLE_STATUS: 'Status',
+        USER_NO_USERS: 'No users found',
+        USER_LOAD_ERROR: 'Failed to load users',
+        USER_LAST_LOGIN_NEVER: 'Never',
+        
+        // Badges
+        BADGE_ADMIN: 'Admin',
+        BADGE_USER: 'User',
+        BADGE_OVER_LIMIT: 'Over Limit',
+        BADGE_ACTIVE: 'Active',
+        
+        // Top Users Section
+        TOP_USERS_TITLE: 'Top API Users',
+        TOP_USERS_CALLS: 'calls',
+        
+        // User Distribution
+        DISTRIBUTION_TITLE: 'User Distribution',
+        DISTRIBUTION_REGULAR: 'Regular Users',
+        DISTRIBUTION_ADMIN: 'Admin Users',
+        DISTRIBUTION_AVG: 'Avg API Calls',
+        DISTRIBUTION_OVER_LIMIT: 'Over Limit %',
+        
+        // Loading states
+        LOADING: 'Loading...',
+        SPINNER_LOADING: 'Loading...',
+        
+        // Actions
+        BUTTON_REFRESH: 'Refresh',
+        
+        // Error messages
+        ERROR_LOAD_DASHBOARD: 'Failed to load dashboard',
+        ERROR_LOGOUT: 'Logout failed'
+    },
+    
     // Main Dashboard
     MAIN: {
         // Navigation
