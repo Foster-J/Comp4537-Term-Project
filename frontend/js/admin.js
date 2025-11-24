@@ -1,210 +1,246 @@
+// admin.js - Complete Admin Dashboard JavaScript
 
 const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:3000'
     : 'https://unsparked-unperturbedly-dahlia.ngrok-f';
 
-// API Helper Functions
+// Helper functions
 async function get(path) {
-    const r = await fetch(API + path, { credentials: 'include' });
-    return r.json();
-}
-
-async function post(path, data = {}) {
     const r = await fetch(API + path, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        method: 'GET',
+        credentials: 'include'
     });
     return r.json();
 }
 
-// DOM Elements
-const adminEmail = document.getElementById('adminEmail');
-const totalUsers = document.getElementById('totalUsers');
-const totalApiCalls = document.getElementById('totalApiCalls');
-const activeUsers = document.getElementById('activeUsers');
-const usersOverLimit = document.getElementById('usersOverLimit');
-const usersTableBody = document.getElementById('usersTableBody');
-const searchInput = document.getElementById('searchInput');
-const loadingSpinner = document.getElementById('loadingSpinner');
-const usersTableContainer = document.getElementById('usersTableContainer');
-const topUsersList = document.getElementById('topUsersList');
+async function post(path, body = {}) {
+    const r = await fetch(API + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+    });
+    return r.json();
+}
 
-let allUsers = [];
-
-// Check Admin Access
-(async () => {
-    const res = await get('/auth/main');
-    if (!res.ok) {
-        window.location = 'index.html';
-        return;
-    }
-
-    // Check if user is admin
-    if (res.user.role !== 'admin') {
-        alert('Access Denied: Admin privileges required');
-        window.location = 'main.html';
-        return;
-    }
-
-    adminEmail.textContent = res.user.email;
-    await loadDashboardData();
-})();
-
-// Load All Dashboard Data
-async function loadDashboardData() {
-    loadingSpinner.classList.remove('d-none');
-    usersTableContainer.classList.add('d-none');
-
+// Load admin dashboard data
+async function loadDashboard() {
     try {
-        // Get system stats
+        // Load system stats
         const statsRes = await get('/api/admin/stats');
         if (statsRes.ok) {
-            updateSystemStats(statsRes.stats);
+            document.getElementById('totalUsers').textContent = statsRes.stats.totalUsers;
+            document.getElementById('totalApiCalls').textContent = statsRes.stats.totalApiCalls;
+            document.getElementById('activeUsers').textContent = statsRes.stats.activeUsers;
+            document.getElementById('usersOverLimit').textContent = statsRes.stats.usersOverLimit;
         }
 
-        // Get all users
-        const usersRes = await get('/api/admin/users');
-        if (usersRes.ok) {
-            allUsers = usersRes.users;
-            displayUsers(allUsers);
-            updateUserDistribution(allUsers);
-            displayTopUsers(allUsers);
-        }
+        // Load users list
+        await loadUsers();
+
+        // Load endpoint statistics
+        await loadEndpointStats();
+
     } catch (error) {
-        console.error('Error loading dashboard:', error);
-        alert('Error loading dashboard data');
-    } finally {
-        loadingSpinner.classList.add('d-none');
-        usersTableContainer.classList.remove('d-none');
+        console.error('Failed to load dashboard:', error);
     }
 }
 
-// Update System Stats
-function updateSystemStats(stats) {
-    totalUsers.textContent = stats.totalUsers;
-    totalApiCalls.textContent = stats.totalApiCalls;
-    activeUsers.textContent = stats.activeUsers;
-    usersOverLimit.textContent = stats.usersOverLimit;
-}
+// Load users table
+async function loadUsers() {
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const usersTableBody = document.getElementById('usersTableBody');
 
-// Display Users in Table
-function displayUsers(users) {
-    if (users.length === 0) {
-        usersTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No users found</td></tr>';
-        return;
-    }
+    loadingSpinner.classList.remove('d-none');
 
-    usersTableBody.innerHTML = users.map(user => {
-        const createdDate = new Date(user.createdAt).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
+    try {
+        const res = await get('/api/admin/users');
+        
+        if (res.ok && res.users) {
+            usersTableBody.innerHTML = '';
 
-        const lastLoginDate = user.lastLogin
-            ? new Date(user.lastLogin).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-            })
-            : 'Never';
-
-        const statusBadge = user.apiCallsUsed > 20
-            ? '<span class="badge bg-warning">Over Limit</span>'
-            : '<span class="badge bg-success">Active</span>';
-
-        const roleBadge = user.role === 'admin'
-            ? '<span class="badge bg-danger">Admin</span>'
-            : '<span class="badge bg-primary">User</span>';
-
-        return `
+            if (res.users.length === 0) {
+                usersTableBody.innerHTML = `
                     <tr>
-                        <td>${user.id}</td>
-                        <td>${user.email}</td>
-                        <td>${roleBadge}</td>
-                        <td>
-                            <span class="${user.apiCallsUsed > 20 ? 'text-warning fw-bold' : ''}">
-                                ${user.apiCallsUsed}
-                            </span>
-                        </td>
-                        <td>${createdDate}</td>
-                        <td>${lastLoginDate}</td>
-                        <td>${statusBadge}</td>
+                        <td colspan="7" class="text-center text-muted">No users found</td>
                     </tr>
                 `;
-    }).join('');
-}
+                return;
+            }
 
-// Update User Distribution Stats
-function updateUserDistribution(users) {
-    const regularUsers = users.filter(u => u.role === 'user').length;
-    const adminUsers = users.filter(u => u.role === 'admin').length;
-    const avgCalls = users.length > 0
-        ? Math.round(users.reduce((sum, u) => sum + u.apiCallsUsed, 0) / users.length)
-        : 0;
-    const overLimitCount = users.filter(u => u.apiCallsUsed > 20).length;
-    const overLimitPercent = users.length > 0
-        ? Math.round((overLimitCount / users.length) * 100)
-        : 0;
+            res.users.forEach(user => {
+                const row = document.createElement('tr');
+                const statusBadge = user.apiCallsUsed > 20 
+                    ? '<span class="badge bg-warning">Over Limit</span>'
+                    : '<span class="badge bg-success">Active</span>';
+                
+                const roleBadge = user.role === 'admin'
+                    ? '<span class="badge bg-danger">Admin</span>'
+                    : '<span class="badge bg-primary">User</span>';
 
-    document.getElementById('regularUsersCount').textContent = regularUsers;
-    document.getElementById('adminUsersCount').textContent = adminUsers;
-    document.getElementById('avgApiCalls').textContent = avgCalls;
-    document.getElementById('limitExceededPercent').textContent = overLimitPercent + '%';
-}
-
-// Display Top API Users
-function displayTopUsers(users) {
-    const sortedUsers = [...users]
-        .sort((a, b) => b.apiCallsUsed - a.apiCallsUsed)
-        .slice(0, 5);
-
-    if (sortedUsers.length === 0) {
-        topUsersList.innerHTML = '<p class="text-muted text-center">No users yet</p>';
-        return;
-    }
-
-    topUsersList.innerHTML = sortedUsers.map((user, index) => {
-        const percentage = Math.min(100, (user.apiCallsUsed / 20) * 100);
-        return `
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                                <strong>#${index + 1}</strong> ${user.firstName} ${user.lastName}
-                                <br>
-                                <small class="text-muted">${user.email}</small>
-                            </div>
-                            <span class="badge bg-primary rounded-pill">${user.apiCallsUsed} calls</span>
-                        </div>
-                        <div class="progress" style="height: 6px;">
-                            <div class="progress-bar ${user.apiCallsUsed > 20 ? 'bg-warning' : ''}" 
-                                 style="width: ${percentage}%"></div>
-                        </div>
-                    </div>
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.email}</td>
+                    <td>${roleBadge}</td>
+                    <td><span class="badge bg-info">${user.apiCallsUsed}</span></td>
+                    <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                    <td>${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}</td>
+                    <td>${statusBadge}</td>
                 `;
-    }).join('');
+                usersTableBody.appendChild(row);
+            });
+
+            // Calculate user distribution stats
+            const regularUsers = res.users.filter(u => u.role === 'user').length;
+            const adminUsers = res.users.filter(u => u.role === 'admin').length;
+            const avgCalls = res.users.length > 0 
+                ? Math.round(res.users.reduce((sum, u) => sum + u.apiCallsUsed, 0) / res.users.length)
+                : 0;
+            const overLimitCount = res.users.filter(u => u.apiCallsUsed > 20).length;
+            const overLimitPercent = res.users.length > 0 
+                ? Math.round((overLimitCount / res.users.length) * 100)
+                : 0;
+
+            document.getElementById('regularUsersCount').textContent = regularUsers;
+            document.getElementById('adminUsersCount').textContent = adminUsers;
+            document.getElementById('avgApiCalls').textContent = avgCalls;
+            document.getElementById('limitExceededPercent').textContent = overLimitPercent + '%';
+
+            // Update top users list
+            const topUsers = [...res.users]
+                .sort((a, b) => b.apiCallsUsed - a.apiCallsUsed)
+                .slice(0, 5);
+
+            const topUsersList = document.getElementById('topUsersList');
+            topUsersList.innerHTML = '';
+
+            topUsers.forEach((user, index) => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                item.innerHTML = `
+                    <div>
+                        <span class="badge bg-secondary me-2">#${index + 1}</span>
+                        <strong>${user.email}</strong>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">${user.apiCallsUsed} calls</span>
+                `;
+                topUsersList.appendChild(item);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load users:', error);
+        usersTableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-danger">Failed to load users</td>
+            </tr>
+        `;
+    } finally {
+        loadingSpinner.classList.add('d-none');
+    }
 }
 
-// Search Functionality
-searchInput.addEventListener('input', (e) => {
+// Load endpoint statistics
+async function loadEndpointStats() {
+    try {
+        const res = await get('/api/admin/endpoint-stats');
+        
+        if (res.ok && res.endpoints) {
+            const endpointTableBody = document.getElementById('endpointStatsTableBody');
+            
+            if (!endpointTableBody) {
+                console.warn('Endpoint stats table body not found');
+                return;
+            }
+
+            endpointTableBody.innerHTML = '';
+
+            if (res.endpoints.length === 0) {
+                endpointTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No endpoint data available</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            res.endpoints.forEach(endpoint => {
+                const row = document.createElement('tr');
+                
+                // Method badge color
+                let methodBadge = '';
+                switch(endpoint.method) {
+                    case 'GET':
+                        methodBadge = '<span class="badge bg-success">GET</span>';
+                        break;
+                    case 'POST':
+                        methodBadge = '<span class="badge bg-primary">POST</span>';
+                        break;
+                    case 'PUT':
+                        methodBadge = '<span class="badge bg-warning">PUT</span>';
+                        break;
+                    case 'DELETE':
+                        methodBadge = '<span class="badge bg-danger">DELETE</span>';
+                        break;
+                    default:
+                        methodBadge = `<span class="badge bg-secondary">${endpoint.method}</span>`;
+                }
+
+                row.innerHTML = `
+                    <td>${methodBadge}</td>
+                    <td><code>${endpoint.endpoint}</code></td>
+                    <td><strong>${endpoint.requestCount.toLocaleString()}</strong></td>
+                    <td><small class="text-muted">${new Date(endpoint.lastAccessed).toLocaleString()}</small></td>
+                `;
+                endpointTableBody.appendChild(row);
+            });
+
+            // Update total requests counter
+            const totalRequests = res.endpoints.reduce((sum, e) => sum + e.requestCount, 0);
+            const totalRequestsEl = document.getElementById('totalEndpointRequests');
+            if (totalRequestsEl) {
+                totalRequestsEl.textContent = totalRequests.toLocaleString();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load endpoint stats:', error);
+        const endpointTableBody = document.getElementById('endpointStatsTableBody');
+        if (endpointTableBody) {
+            endpointTableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-danger">Failed to load endpoint statistics</td>
+                </tr>
+            `;
+        }
+    }
+}
+
+// Search functionality
+document.getElementById('searchInput')?.addEventListener('input', (e) => {
     const searchTerm = e.target.value.toLowerCase();
-    const filteredUsers = allUsers.filter(user =>
-        user.email.toLowerCase().includes(searchTerm) ||
-        user.firstName.toLowerCase().includes(searchTerm) ||
-        user.lastName.toLowerCase().includes(searchTerm)
-    );
-    displayUsers(filteredUsers);
+    const rows = document.querySelectorAll('#usersTableBody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
 });
 
-// Refresh Button
-document.getElementById('refreshBtn').addEventListener('click', async () => {
-    await loadDashboardData();
+// Refresh button
+document.getElementById('refreshBtn')?.addEventListener('click', () => {
+    loadDashboard();
 });
 
 // Logout
-document.getElementById('logoutBtn').onclick = async () => {
-    await post('/auth/logout');
-    window.location = 'index.html';
-};
+document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    try {
+        await post('/auth/logout');
+        window.location.href = 'index.html';
+    } catch (error) {
+        console.error('Logout failed:', error);
+    }
+});
+
+// Initialize dashboard on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadDashboard();
+});

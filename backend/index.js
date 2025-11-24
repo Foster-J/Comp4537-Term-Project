@@ -103,6 +103,18 @@ async function initDb() {
     ) ENGINE=InnoDB;
 `);
 
+    await db.query(`
+    CREATE TABLE IF NOT EXISTS endpoint_stats (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        method VARCHAR(10) NOT NULL,
+        endpoint VARCHAR(255) NOT NULL,
+        request_count INT NOT NULL DEFAULT 0,
+        last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_endpoint (method, endpoint)
+    ) ENGINE=InnoDB;
+`);
+
     const [rows] = await db.query(
         `SELECT email FROM users WHERE email IN ('gugu@gugu.com','admin@admin.com')`
     );
@@ -159,6 +171,29 @@ async function getUserById(id) {
         lastLogin: u.last_login
     };
 }
+
+// Track all API endpoint usage
+app.use(async (req, res, next) => {
+    // Track endpoint after response is sent
+    res.on('finish', async () => {
+        // Only track API endpoints (skip static files, OPTIONS, etc.)
+        if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
+            try {
+                await db.query(`
+                    INSERT INTO endpoint_stats (method, endpoint, request_count, last_accessed)
+                    VALUES (?, ?, 1, NOW())
+                    ON DUPLICATE KEY UPDATE 
+                        request_count = request_count + 1,
+                        last_accessed = NOW()
+                `, [req.method, req.path]);
+            } catch (err) {
+                console.error('Failed to track endpoint stats:', err);
+            }
+        }
+    });
+    
+    next();
+});
 
 // -----------------------------------------
 // Authentication middleware
@@ -470,6 +505,36 @@ app.get('/api/admin/stats', auth, isAdmin, async (_req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// Get endpoint statistics
+app.get('/api/admin/endpoint-stats', auth, isAdmin, async (_req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT 
+                method,
+                endpoint,
+                request_count,
+                last_accessed,
+                created_at
+            FROM endpoint_stats
+            ORDER BY request_count DESC
+        `);
+
+        res.json({
+            ok: true,
+            endpoints: rows.map(e => ({
+                method: e.method,
+                endpoint: e.endpoint,
+                requestCount: e.request_count,
+                lastAccessed: e.last_accessed,
+                createdAt: e.created_at
+            }))
+        });
+    } catch (e) {
+        console.error('Failed to fetch endpoint stats:', e);
+        res.status(500).json({ error: 'Failed to fetch endpoint statistics' });
     }
 });
 
