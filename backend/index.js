@@ -9,9 +9,36 @@ const cors = require('cors');
 const axios = require('axios');
 const db = require('./databaseConnection');
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'COMP4537 Term Project API',
+            version: '1.0.0',
+            description: 'Swagger auto-generated API docs'
+        },
+        servers: [
+            {
+                url: 'http://localhost:3000',
+                description: 'Local dev server'
+            }
+        ]
+    },
+    apis: ['./index.js'], // important!
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', (req, res, next) => {
+    console.log('🔥 /api-docs hit:', req.method, req.url);
+    next();
+}, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const twilioClient = twilio(
     process.env.TWILIO_ACCOUNT_SID,
@@ -221,6 +248,35 @@ function isAdmin(req, res, next) {
 // AUTH ROUTES
 // -----------------------------------------
 
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Register a new user account
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 3
+ *     responses:
+ *       201:
+ *         description: User created
+ *       400:
+ *         description: Invalid input or email already exists
+ */
+
 app.post('/auth/register', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -248,6 +304,63 @@ app.post('/auth/register', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login with email and password
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *               password:
+ *                 type: string
+ *                 example: "123"
+ *     responses:
+ *       200:
+ *         description: Successful login, JWT cookie set
+ *         headers:
+ *           Set-Cookie:
+ *             description: HttpOnly JWT auth cookie
+ *             schema:
+ *               type: string
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                       example: "user@example.com"
+ *                     role:
+ *                       type: string
+ *                       example: "user"
+ *                 redirectTo:
+ *                   type: string
+ *                   description: Frontend page to redirect user to
+ *                   example: "main.html"
+ *       401:
+ *         description: Invalid credentials
+ *       500:
+ *         description: Login failed due to server error
+ */
 app.post('/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body || {};
@@ -288,6 +401,26 @@ app.post('/auth/login', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Log out the current user by clearing the auth cookie
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: User logged out successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *       500:
+ *         description: Server error
+ */
 app.post('/auth/logout', (req, res) => {
     res.clearCookie('token', {
         httpOnly: true,
@@ -298,6 +431,52 @@ app.post('/auth/logout', (req, res) => {
     res.json({ ok: true });
 });
 
+/**
+ * @swagger
+ * /auth/main:
+ *   get:
+ *     summary: Get the logged-in user's dashboard info
+ *     description: Requires a valid JWT token stored in an HttpOnly cookie.
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved user dashboard information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                       example: "user@example.com"
+ *                     role:
+ *                       type: string
+ *                       example: "user"
+ *                     apiCallsUsed:
+ *                       type: integer
+ *                       example: 5
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2025-01-15T20:34:12.000Z"
+ *                     lastLogin:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
+ *                       example: "2025-02-10T16:21:44.000Z"
+ *       401:
+ *         description: Missing or invalid authentication cookie
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error while loading dashboard
+ */
 app.get('/auth/main', auth, async (req, res) => {
     try {
         const user = await getUserById(req.user.uid);
@@ -321,6 +500,47 @@ app.get('/auth/main', auth, async (req, res) => {
 
 /* API ROUTES */
 
+/**
+ * @swagger
+ * /api/user/stats:
+ *   get:
+ *     summary: Get usage statistics for the logged-in user
+ *     description: Returns API call usage, remaining free calls, and account creation date. Requires authentication via JWT cookie.
+ *     tags: [User]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved user statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 stats:
+ *                   type: object
+ *                   properties:
+ *                     apiCallsUsed:
+ *                       type: integer
+ *                       example: 7
+ *                     freeCallsRemaining:
+ *                       type: integer
+ *                       example: 13
+ *                     exceededLimit:
+ *                       type: boolean
+ *                       example: false
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2025-01-18T19:22:17.000Z"
+ *       401:
+ *         description: Missing or invalid authentication token
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Failed to fetch stats due to server error
+ */
 app.get('/api/user/stats', auth, async (req, res) => {
     try {
         const user = await getUserById(req.user.uid);
@@ -341,6 +561,84 @@ app.get('/api/user/stats', auth, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/ai/call:
+ *   post:
+ *     summary: Generate an AI restaurant-call script and place a phone call using Twilio
+ *     description: >
+ *       Uses an LLM to generate a natural-sounding call script, increments the user's API usage,
+ *       stores the script in the call history, and attempts to place a phone call using Twilio TTS.
+ *       Requires authentication via JWT cookie.
+ *     tags: [AI]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - callerName
+ *               - restaurantName
+ *               - phoneNumber
+ *               - script
+ *             properties:
+ *               callerName:
+ *                 type: string
+ *                 example: "Gurvir"
+ *               restaurantName:
+ *                 type: string
+ *                 example: "Pizza Heaven"
+ *               phoneNumber:
+ *                 type: string
+ *                 description: Phone number to call using Twilio
+ *                 example: "+16045551234"
+ *               script:
+ *                 type: string
+ *                 description: Customer's order or notes used to generate the AI call script
+ *                 example: "I'd like a pepperoni pizza with extra cheese."
+ *     responses:
+ *       200:
+ *         description: AI script generated and saved; Twilio call attempted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 status:
+ *                   type: string
+ *                   description: Final call status
+ *                   example: "Completed"
+ *                   enum: [Completed, Failed]
+ *                 message:
+ *                   type: string
+ *                   example: "AI call script generated, call placed, and saved to your history."
+ *                 aiScript:
+ *                   type: string
+ *                   example: "Hi, this is UpScaling calling on behalf of Gurvir..."
+ *                 callSid:
+ *                   type: string
+ *                   nullable: true
+ *                   description: Twilio call SID if a call was successfully made
+ *                   example: "CA1234567890abcdef"
+ *                 apiCallsUsed:
+ *                   type: integer
+ *                   example: 8
+ *                 freeCallsRemaining:
+ *                   type: integer
+ *                   example: 12
+ *       400:
+ *         description: Missing required fields in the request body
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Failed to generate AI call script or Twilio error
+ */
 app.post('/api/ai/call', auth, async (req, res) => {
     try {
         const { callerName, restaurantName, phoneNumber, script } = req.body;
@@ -438,7 +736,58 @@ app.post('/api/ai/call', auth, async (req, res) => {
     }
 });
 
-
+/**
+ * @swagger
+ * /api/user/call-history:
+ *   get:
+ *     summary: Get the recent AI call history for the logged-in user
+ *     description: Returns up to the 10 most recent AI/Twilio calls made by the authenticated user.
+ *     tags: [User]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved call history
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 calls:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 3
+ *                       caller_name:
+ *                         type: string
+ *                         example: "Gurvir"
+ *                       restaurant_name:
+ *                         type: string
+ *                         example: "Pizza Heaven"
+ *                       phone_number:
+ *                         type: string
+ *                         example: "+16045551234"
+ *                       script:
+ *                         type: string
+ *                         description: The AI-generated or fallback script that was used for the call
+ *                         example: "Hi, this is UpScaling calling on behalf of Gurvir..."
+ *                       status:
+ *                         type: string
+ *                         description: Call status
+ *                         example: "completed"
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-02-10T18:45:12.000Z"
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       500:
+ *         description: Failed to fetch call history due to server error
+ */
 // Get user's call history
 app.get('/api/user/call-history', auth, async (req, res) => {
     try {
@@ -464,6 +813,59 @@ app.get('/api/user/call-history', auth, async (req, res) => {
 
 /* ADMIN ROUTES */
 
+/**
+ * @swagger
+ * /api/admin/users:
+ *   get:
+ *     summary: Get a list of all users (admin only)
+ *     description: >
+ *       Returns all users in the system, ordered by API usage.  
+ *       Requires authentication and admin privileges.
+ *     tags: [Admin]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved list of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 12
+ *                       email:
+ *                         type: string
+ *                         example: "user@example.com"
+ *                       role:
+ *                         type: string
+ *                         example: "user"
+ *                       apiCallsUsed:
+ *                         type: integer
+ *                         example: 17
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-01-12T18:45:22.000Z"
+ *                       lastLogin:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *                         example: "2025-02-21T10:12:11.000Z"
+ *       401:
+ *         description: Unauthorized — missing or invalid token
+ *       403:
+ *         description: Forbidden — user is not an admin
+ *       500:
+ *         description: Server error while fetching user list
+ */
 app.get('/api/admin/users', auth, isAdmin, async (_req, res) => {
     try {
         const [rows] = await db.query(
@@ -486,6 +888,51 @@ app.get('/api/admin/users', auth, isAdmin, async (_req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/admin/stats:
+ *   get:
+ *     summary: Get global application statistics (admin only)
+ *     description: >
+ *       Returns total user count, total API usage, number of active users,
+ *       and the number of users who have exceeded the 20-call limit.
+ *       Requires authentication + admin privileges.
+ *     tags: [Admin]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved application statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 stats:
+ *                   type: object
+ *                   properties:
+ *                     totalUsers:
+ *                       type: integer
+ *                       example: 42
+ *                     totalApiCalls:
+ *                       type: integer
+ *                       example: 183
+ *                     activeUsers:
+ *                       type: integer
+ *                       description: Users with a non-null last_login timestamp
+ *                       example: 29
+ *                     usersOverLimit:
+ *                       type: integer
+ *                       description: Users who exceeded 20 API calls
+ *                       example: 4
+ *       401:
+ *         description: Unauthorized — missing or invalid token
+ *       403:
+ *         description: Forbidden — user is not an admin
+ *       500:
+ *         description: Server error while retrieving admin stats
+ */
 app.get('/api/admin/stats', auth, isAdmin, async (_req, res) => {
     try {
         const [[tot]] = await db.query(`SELECT COUNT(*) AS total_users FROM users`);
@@ -509,6 +956,57 @@ app.get('/api/admin/stats', auth, isAdmin, async (_req, res) => {
 });
 
 // Get endpoint statistics
+/**
+ * @swagger
+ * /api/admin/endpoint-stats:
+ *   get:
+ *     summary: Get API usage statistics for all endpoints (admin only)
+ *     description: >
+ *       Returns analytics for each API endpoint, including request counts,
+ *       HTTP method, last accessed time, and creation date.  
+ *       Requires authentication and admin privileges.
+ *     tags: [Admin]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved endpoint statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 endpoints:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       method:
+ *                         type: string
+ *                         example: "GET"
+ *                       endpoint:
+ *                         type: string
+ *                         example: "/api/user/stats"
+ *                       requestCount:
+ *                         type: integer
+ *                         example: 48
+ *                       lastAccessed:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *                         example: "2025-02-20T13:21:34.000Z"
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-01-10T09:12:44.000Z"
+ *       401:
+ *         description: Unauthorized — missing or invalid token
+ *       403:
+ *         description: Forbidden — user is not an admin
+ *       500:
+ *         description: Failed to fetch endpoint statistics due to server error
+ */
 app.get('/api/admin/endpoint-stats', auth, isAdmin, async (_req, res) => {
     try {
         const [rows] = await db.query(`
@@ -539,6 +1037,50 @@ app.get('/api/admin/endpoint-stats', auth, isAdmin, async (_req, res) => {
 });
 
 // Generic AI chat endpoint (optional, uses same hosted LLM)
+/**
+ * @swagger
+ * /api/ai/chat:
+ *   post:
+ *     summary: Send a text prompt to the LLM and get a chat-style response
+ *     description: >
+ *       Sends the user's input message to the configured LLM API and returns the generated output.
+ *       Requires authentication via JWT cookie.
+ *     tags: [AI]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - input
+ *             properties:
+ *               input:
+ *                 type: string
+ *                 description: The user's prompt to send to the LLM
+ *                 example: "Rewrite this to sound more polite: hurry up."
+ *     responses:
+ *       200:
+ *         description: AI responded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 output:
+ *                   type: string
+ *                   description: The LLM-generated response
+ *                   example: "Could you please proceed a little faster? Thank you!"
+ *       400:
+ *         description: Missing required 'input' field
+ *       401:
+ *         description: Unauthorized — missing or invalid authentication token
+ *       500:
+ *         description: LLM server error or failed processing
+ */
 app.post('/api/ai/chat', auth, async (req, res) => {
     try {
         const { input } = req.body;
@@ -594,6 +1136,39 @@ async function makeTTSCall(phoneNumber, text) {
     }
 }
 
+/**
+ * @swagger
+ * /twilio/say:
+ *   post:
+ *     summary: Generate Twilio-compatible XML (TwiML) to speak a message aloud
+ *     description: >
+ *       Returns a TwiML `<Response>` document containing a `<Say>` instruction.
+ *       Used by Twilio when making TTS phone calls.  
+ *       Accepts an optional `text` query parameter.
+ *     tags: [Twilio]
+ *     parameters:
+ *       - in: query
+ *         name: text
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: The text that Twilio should speak aloud
+ *         example: "Your order is ready for pickup."
+ *     responses:
+ *       200:
+ *         description: Twilio XML (TwiML) returned successfully
+ *         content:
+ *           application/xml:
+ *             schema:
+ *               type: string
+ *               example: |
+ *                 <?xml version="1.0" encoding="UTF-8"?>
+ *                 <Response>
+ *                   <Say voice="Polly.Joanna" language="en-US">Hello from Twilio</Say>
+ *                 </Response>
+ *       500:
+ *         description: Server error generating TwiML
+ */
 app.post("/twilio/say", (req, res) => {
     const text = req.query.text || "Hello, this is an AI call.";
 
