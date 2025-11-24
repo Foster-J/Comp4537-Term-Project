@@ -50,3 +50,6 @@ body {
         .signup-link a:hover {
             text-decoration: underline;
         }
+        .progress {
+            height: 25px;
+        }

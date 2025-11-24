@@ -35,6 +35,8 @@ const userEmail = document.getElementById('userEmail');
 const apiCallsUsed = document.getElementById('apiCallsUsed');
 const remainingCalls = document.getElementById('remainingCalls');
 const progressFill = document.getElementById('progressFill');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
 const limitWarning = document.getElementById('limitWarning');
 const submitBtn = document.getElementById('submitBtn');
 const callForm = document.getElementById('callForm');
@@ -42,6 +44,72 @@ const resultBox = document.getElementById('resultBox');
 const resultContent = document.getElementById('resultContent');
 const memberSince = document.getElementById('memberSince');
 const recentCallsTable = document.getElementById('recentCallsTable');
+
+// Update progress bar with API usage stats
+async function updateProgressBar() {
+    try {
+        const statsRes = await get('/api/user/stats');
+        
+        if (statsRes.ok && statsRes.stats) {
+            const stats = statsRes.stats;
+            const used = stats.apiCallsUsed || 0;
+            const remaining = stats.freeCallsRemaining || 0;
+            
+            // Calculate usage percentage
+            const usagePercent = Math.min(Math.round((used / 20) * 100), 100);
+            
+            // Update progress text if element exists
+            if (progressText) {
+                progressText.textContent = `${used} / 20 calls`;
+            }
+            
+            // Update progress bar if element exists
+            if (progressBar) {
+                progressBar.style.width = usagePercent + '%';
+                progressBar.textContent = usagePercent + '%';
+                progressBar.setAttribute('aria-valuenow', usagePercent);
+                
+                // Set progress bar color based on usage
+                progressBar.className = 'progress-bar';
+                if (usagePercent >= 100) {
+                    progressBar.classList.add('bg-danger');
+                } else if (usagePercent >= 80) {
+                    progressBar.classList.add('bg-warning');
+                } else if (usagePercent >= 50) {
+                    progressBar.classList.add('bg-info');
+                } else {
+                    progressBar.classList.add('bg-success');
+                }
+            }
+
+            // Update old stats format (for backward compatibility)
+            if (apiCallsUsed) {
+                apiCallsUsed.textContent = used;
+            }
+            if (remainingCalls) {
+                remainingCalls.textContent = remaining;
+            }
+            if (progressFill) {
+                progressFill.style.width = usagePercent + '%';
+            }
+
+            // Show warning if over limit
+            if (limitWarning && used >= 20) {
+                limitWarning.classList.remove('d-none');
+            }
+
+            return { used, remaining, usagePercent };
+        }
+    } catch (error) {
+        console.error('Failed to load API stats:', error);
+    }
+}
+
+// Update Stats Display (legacy function - now calls updateProgressBar)
+async function updateStats(used) {
+    // Use the new API-based update instead
+    await updateProgressBar();
+}
 
 // Check if user logged in
 (async () => {
@@ -53,36 +121,22 @@ const recentCallsTable = document.getElementById('recentCallsTable');
 
     userEmail.textContent = res.user.email;
 
-    const userData = {
-        apiCallsUsed: res.user.apiCallsUsed || 0,
-        createdAt: res.user.createdAt
-    };
+    // Update progress bar with real API stats
+    await updateProgressBar();
 
-    updateStats(userData.apiCallsUsed);
+    // Load call history
+    loadRecentCalls();
 
-    const date = new Date(userData.createdAt);
-    memberSince.textContent = date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
-})();
-
-// Update Stats Display
-function updateStats(used) {
-    if (!apiCallsUsed || !remainingCalls || !progressFill || !limitWarning) return;
-
-    const remaining = Math.max(0, 20 - used);
-    const percentage = Math.min(100, (used / 20) * 100);
-
-    apiCallsUsed.textContent = used;
-    remainingCalls.textContent = remaining;
-    progressFill.style.width = percentage + '%';
-
-    if (used >= 20) {
-        limitWarning.classList.remove('d-none');
+    // Set member since date
+    if (memberSince && res.user.createdAt) {
+        const date = new Date(res.user.createdAt);
+        memberSince.textContent = date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
     }
-}
+})();
 
 // Handle AI Phone Call Submission → goes through backend, which calls hosted LLM
 callForm.addEventListener('submit', async (e) => {
@@ -133,12 +187,14 @@ callForm.addEventListener('submit', async (e) => {
         `;
         resultBox.classList.remove('d-none');
 
-        if (typeof response.apiCallsUsed === 'number') {
-            updateStats(response.apiCallsUsed);
-        }
+        // Update progress bar after successful call
+        await updateProgressBar();
 
         // Update recent calls table
         addRecentCall(restaurantName, phoneNumber);
+
+        // Clear form on success
+        callForm.reset();
 
     } catch (error) {
         alert('Network error. Please try again.');
@@ -160,23 +216,28 @@ document.querySelectorAll('.template-btn').forEach(btn => {
 });
 
 // Clear Form
-document.getElementById('clearForm').addEventListener('click', () => {
-    callForm.reset();
-});
+const clearFormBtn = document.getElementById('clearForm');
+if (clearFormBtn) {
+    clearFormBtn.addEventListener('click', () => {
+        callForm.reset();
+    });
+}
 
 // Load Recent Calls from Database
 async function loadRecentCalls() {
     try {
         const response = await get('/api/user/call-history');
         if (response.ok && response.calls && response.calls.length > 0) {
-            recentCallsTable.innerHTML = response.calls.map(call => `
-                <tr>
-                    <td>${new Date(call.created_at).toLocaleString()}</td>
-                    <td>${call.restaurant_name}</td>
-                    <td>${call.phone_number}</td>
-                    <td><span class="badge bg-success">${call.status || 'Completed'}</span></td>
-                </tr>
-            `).join('');
+            if (recentCallsTable) {
+                recentCallsTable.innerHTML = response.calls.map(call => `
+                    <tr>
+                        <td>${new Date(call.created_at).toLocaleString()}</td>
+                        <td>${call.restaurant_name}</td>
+                        <td>${call.phone_number}</td>
+                        <td><span class="badge bg-success">${call.status || 'Completed'}</span></td>
+                    </tr>
+                `).join('');
+            }
         }
     } catch (error) {
         console.error('Error loading call history:', error);
@@ -205,7 +266,10 @@ function addRecentCall(restaurant, phone) {
 }
 
 // Logout Handler
-document.getElementById('logoutBtn').onclick = async () => {
-    await post('/auth/logout');
-    window.location = 'index.html';
-};
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+    logoutBtn.onclick = async () => {
+        await post('/auth/logout');
+        window.location = 'index.html';
+    };
+}

@@ -32,73 +32,84 @@
 
 <!-- Main Content Row -->
 <div class="row g-4 mb-4">
+<!-- Create Call Script -->
+<div class="col-lg-8">
+    <div class="card control-card">
+        <div class="card-body">
+            <h5 class="card-title mb-4">
+                <i class="bi bi-mic-fill me-2"></i>Create Phone Call Script
+            </h5>
 
-    <!-- Create Call Script -->
-    <div class="col-lg-8">
-        <div class="card control-card">
-            <div class="card-body">
-                <h5 class="card-title mb-4">
-                    <i class="bi bi-mic-fill me-2"></i>Create Phone Call Script
-                </h5>
-
-                <form id="callForm">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="callerName" class="form-label fw-semibold">
-                                <i class="bi bi-person me-1"></i>Your Name
-                            </label>
-                            <input type="text" class="form-control" id="callerName" placeholder="John Doe" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="restaurantName" class="form-label fw-semibold">
-                                <i class="bi bi-shop me-1"></i>Restaurant Name
-                            </label>
-                            <input type="text" class="form-control" id="restaurantName" placeholder="Nav Sweets"
-                                required>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="phoneNumber" class="form-label fw-semibold">
-                            <i class="bi bi-telephone me-1"></i>Phone Number
+            <form id="callForm">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="callerName" class="form-label fw-semibold">
+                            <i class="bi bi-person me-1"></i>Your Name
                         </label>
-                        <input type="tel" class="form-control" id="phoneNumber" placeholder="+1 (555) 123-4567"
-                            pattern="[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}" required>
-                        <div class="form-text">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Include country code (e.g., +1 for USA/Canada)
-                        </div>
+                        <input type="text" class="form-control" id="callerName" placeholder="John Doe" required>
                     </div>
-
-                    <div class="mb-3">
-                        <label for="callScript" class="form-label fw-semibold">
-                            <i class="bi bi-chat-text me-1"></i>Call Script
+                    <div class="col-md-6">
+                        <label for="restaurantName" class="form-label fw-semibold">
+                            <i class="bi bi-shop me-1"></i>Restaurant Name
                         </label>
-                        <textarea class="form-control" id="callScript" rows="6"
-                            placeholder="Hi, my name is [Your Name] and I'd like to make a reservation for 4 people at 7pm this Friday..."
-                            required></textarea>
-                        <div class="form-text">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Write what you want the AI to say on the phone call
-                        </div>
+                        <input type="text" class="form-control" id="restaurantName" placeholder="Nav Sweets" required>
                     </div>
-
-                    <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
-                        <i class="bi bi-send me-2"></i>Make AI Phone Call
-                    </button>
-                </form>
-
-                <!-- Result Display -->
-                <div class="alert alert-success mt-4 d-none" id="resultBox">
-                    <h6 class="alert-heading">
-                        <i class="bi bi-check-circle me-2"></i>Call Initiated Successfully!
-                    </h6>
-                    <hr>
-                    <p class="mb-0" id="resultContent"></p>
                 </div>
+
+                <div class="mb-3">
+                    <label for="phoneNumber" class="form-label fw-semibold">
+                        <i class="bi bi-telephone me-1"></i>Phone Number
+                    </label>
+                    <input type="tel" class="form-control" id="phoneNumber" placeholder="+1 (555) 123-4567"
+                        pattern="[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}" required>
+                    <div class="form-text">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Include country code (e.g., +1 for USA/Canada)
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="callScript" class="form-label fw-semibold">
+                        <i class="bi bi-chat-text me-1"></i>Call Script
+                    </label>
+                    <textarea class="form-control" id="callScript" rows="6"
+                        placeholder="Hi, my name is [Your Name] and I'd like to make a reservation for 4 people at 7pm this Friday..."
+                        required></textarea>
+                    <div class="form-text">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Write what you want the AI to say on the phone call
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
+                    <i class="bi bi-send me-2"></i>Make AI Phone Call
+                </button>
+            </form>
+
+            <!-- Result Display -->
+            <div class="alert alert-success mt-4 d-none" id="resultBox">
+                <h6 class="alert-heading">
+                    <i class="bi bi-check-circle me-2"></i>Call Initiated Successfully!
+                </h6>
+                <hr>
+                <p class="mb-0" id="resultContent"></p>
             </div>
         </div>
     </div>
+    <!-- Progress Bar -->
+    <div class="mb-3">
+        <div class="d-flex justify-content-between mb-2">
+            <span class="fw-bold">Free Tier Progress</span>
+            <span id="progressText">0 / 20 calls</span>
+        </div>
+        <div class="progress">
+            <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%" aria-valuenow="0"
+                aria-valuemin="0" aria-valuemax="100">
+                0%
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Saved Scripts & Tips -->
     <div class="col-lg-4">
