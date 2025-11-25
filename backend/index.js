@@ -561,6 +561,12 @@ app.get('/api/user/stats', auth, async (req, res) => {
     }
 });
 
+function cleanSpoken(text) {
+    return text
+        .replace(/[\n\r\t]/g, '')          // strip newline, return, tab explicitly
+        .replace(/[^A-Za-z0-9 .,?!]/g, ''); // strip anything not allowed
+}
+
 /**
  * @swagger
  * /api/ai/call:
@@ -702,7 +708,7 @@ app.post('/api/ai/call', auth, async (req, res) => {
         let callSid = null;
 
         try {
-            callSid = await makeTTSCall(phoneNumber, spokenText);
+            callSid = await makeTTSCall(phoneNumber, cleanSpoken(spokenText));
             console.log('Twilio call started, SID:', callSid);
             callStatus = 'completed';
         } catch (twilioErr) {
