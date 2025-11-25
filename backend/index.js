@@ -218,7 +218,7 @@ app.use(async (req, res, next) => {
             }
         }
     });
-    
+
     next();
 });
 
@@ -713,7 +713,7 @@ app.post('/api/ai/call', auth, async (req, res) => {
             callStatus = 'completed';
         } catch (twilioErr) {
             console.error('Twilio call failed:', twilioErr);
-            callStatus = 'failed';   
+            callStatus = 'failed';
         }
 
         await db.query(
@@ -1175,19 +1175,25 @@ async function makeTTSCall(phoneNumber, text) {
  *       500:
  *         description: Server error generating TwiML
  */
-app.post("/twilio/say", (req, res) => {
-    const text = req.query.text || "Hello, this is an AI call.";
-
+app.all("/twilio/say", (req, res) => {
+    const text = req.query.text || "Hello from your AI call!";
+    const twilio = require('twilio');
     const VoiceResponse = twilio.twiml.VoiceResponse;
-    const twiml = new VoiceResponse();
 
-    twiml.say({
-        voice: "Polly.Joanna",     
-        language: "en-US"
-    }, text);
+    const response = new VoiceResponse();
 
-    res.type("text/xml").send(twiml.toString());
+    response.say(
+        {
+            voice: "Polly.Joanna",
+            language: "en-US"
+        },
+        text
+    );
+
+    res.type("text/xml");
+    res.send(response.toString());
 });
+
 
 /* SERVER */
 app.listen(3000, () => console.log('API running on http://localhost:3000'));
