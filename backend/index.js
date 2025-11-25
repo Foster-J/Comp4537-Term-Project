@@ -1177,7 +1177,6 @@ async function makeTTSCall(phoneNumber, text) {
  */
 app.all("/twilio/say", (req, res) => {
     const text = req.query.text || "Hello from your AI call!";
-    const twilio = require('twilio');
     const VoiceResponse = twilio.twiml.VoiceResponse;
 
     const response = new VoiceResponse();
@@ -1194,6 +1193,12 @@ app.all("/twilio/say", (req, res) => {
     res.send(response.toString());
 });
 
+// TEMP DEBUG: show PUBLIC_URL in browser
+app.get('/debug/env', (req, res) => {
+    res.json({
+        PUBLIC_URL: process.env.PUBLIC_URL || '(undefined)'
+    });
+});
 
 /* SERVER */
 app.listen(3000, () => console.log('API running on http://localhost:3000'));
