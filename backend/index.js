@@ -1127,10 +1127,16 @@ app.post('/api/ai/chat', auth, async (req, res) => {
 
 async function makeTTSCall(phoneNumber, text) {
     try {
+        const baseUrl = (process.env.PUBLIC_URL || '').replace(/\/+$/, ''); // strip trailing slashes
+
+        const finalUrl = `${baseUrl}/twilio/say?text=${encodeURIComponent(text)}`;
+        console.log('Twilio will request TwiML from:', finalUrl);
+
         const call = await twilioClient.calls.create({
             to: phoneNumber,
             from: process.env.TWILIO_PHONE_NUMBER,
-            url: `${process.env.PUBLIC_URL}/twilio/say?text=${encodeURIComponent(text)}`
+            url: finalUrl,
+            method: 'POST'
         });
 
         console.log("📞 Call SID:", call.sid);
